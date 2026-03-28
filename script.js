@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements - Auth
+    // --- DOM Selectors ---
     const authOverlay = document.getElementById('auth-overlay');
     const loginBtn = document.getElementById('login-btn');
     const registerBtn = document.getElementById('register-btn');
@@ -7,35 +7,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const authPasswordInput = document.getElementById('auth-password');
     const authError = document.getElementById('auth-error');
 
-    // DOM Elements - App Containers
     const appContainer = document.getElementById('app-container');
     const mainHeaderTitle = document.getElementById('main-header-title');
     const sidebarContextTitle = document.getElementById('sidebar-context-title');
     const dynamicServerList = document.getElementById('dynamic-server-list');
     const dynamicChannelList = document.getElementById('dynamic-channel-list');
-    const dynamicMemberList = document.getElementById('dynamic-member-list');
     const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendMsgBtn = document.getElementById('send-msg-btn');
 
-    // DOM Elements - Controls
     const micBtn = document.getElementById('mic-btn');
     const deafenBtn = document.getElementById('deafen-btn');
     const screenShareBtn = document.getElementById('screen-share-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
     const voiceControls = document.getElementById('voice-controls');
     const voiceGrid = document.getElementById('voice-grid');
-    const chatArea = document.getElementById('chat-area');
-    const chatInput = document.getElementById('chat-input');
-    const sendMsgBtn = document.getElementById('send-msg-btn');
-
-    // Mobile Toggle
-    const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
-    const mobileMembersToggle = document.getElementById('mobile-members-toggle');
+    const welcomeMessage = document.getElementById('welcome-message');
 
     // Modals
     const createServerModal = document.getElementById('create-server-modal');
     const addFriendModal = document.getElementById('add-friend-modal');
+    const joinServerModal = document.getElementById('join-server-modal');
 
-    // State
+    // --- State Management ---
     let socket = io('/');
     let myPeer = null;
     let currentUser = null;
@@ -50,26 +44,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDeafened = false;
     let isScreenSharing = false;
 
-    // --- Auth Logic ---
+    // --- Initialization ---
+    function initLucide() {
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // --- Authentication ---
     function handleAuth(type) {
         const username = authUsernameInput.value.trim();
         const password = authPasswordInput.value.trim();
-        if(!username || !password) return authError.textContent = "Fill all fields";
+        if(!username || !password) return authError.textContent = "Please fill in all fields.";
         
         socket.emit(type, {username, password}, (res) => {
             if(res.success) {
-                if(type==='login') {
+                if(type === 'login') {
                     currentUser = res.user;
                     friends = res.friends;
                     servers = res.servers;
                     authOverlay.style.display = 'none';
-                    appContainer.style.display = 'grid';
+                    appContainer.style.display = 'flex';
                     document.getElementById('my-username-display').textContent = currentUser.username;
+                    // Seed avatar based on name
+                    document.querySelector('#my-avatar img').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.username}`;
+                    
                     initWebRTC();
                     renderServerList();
                     renderSidebar();
+                    initLucide();
                 } else {
-                    authError.style.color = 'var(--accent-success)';
+                    authError.style.color = 'var(--accent-green)';
                     authError.textContent = res.message;
                 }
             } else {
@@ -81,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.addEventListener('click', () => handleAuth('login'));
     registerBtn.addEventListener('click', () => handleAuth('register'));
 
-    // --- UI Logic ---
+    // --- Navigation & UI Rendering ---
     function renderServerList() {
         dynamicServerList.innerHTML = '';
         servers.forEach(s => {
@@ -91,7 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
             el.innerHTML = s.name.substring(0, 1).toUpperCase();
             el.addEventListener('click', () => {
                 currentContext = s.id;
-                document.getElementById('nav-home').classList.remove('active');
+                document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('active'));
+                el.classList.add('active');
                 renderServerList();
                 renderSidebar();
                 switchMainView('server', s);
@@ -107,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             friends.forEach(f => {
                 const li = document.createElement('li');
                 li.className = currentChannelId === `dm_${f.id}` ? 'active' : '';
-                li.innerHTML = `<i class="fa-solid fa-user"></i> <span>${f.username}</span>`;
+                li.innerHTML = `<i data-lucide="user"></i> <span>${f.username}</span>`;
                 li.addEventListener('click', () => openDM(f));
                 dynamicChannelList.appendChild(li);
             });
@@ -117,39 +121,41 @@ document.addEventListener('DOMContentLoaded', () => {
             server.channels.forEach(ch => {
                 const li = document.createElement('li');
                 li.className = currentChannelId === ch.id ? 'active' : '';
-                li.innerHTML = `<i class="fa-solid ${ch.type==='voice' ? 'fa-volume-high' : 'fa-hashtag'}"></i> <span>${ch.name}</span>`;
+                const iconType = ch.type === 'voice' ? 'mic' : 'hash';
+                li.innerHTML = `<i data-lucide="${iconType}"></i> <span>${ch.name}</span>`;
                 li.addEventListener('click', () => joinChannel(server.id, ch));
                 dynamicChannelList.appendChild(li);
             });
         }
+        initLucide();
     }
 
     function switchMainView(type, data) {
-        document.body.classList.remove('sidebar-active');
         if(type === 'server') {
             mainHeaderTitle.textContent = data.name;
-            document.getElementById('main-header-icon').className = 'fa-solid fa-server';
-            chatArea.style.display = 'flex';
-            voiceGrid.style.display = 'none';
+            document.getElementById('main-header-icon').setAttribute('data-lucide', 'server');
         } else {
-             mainHeaderTitle.textContent = 'Friends';
-             document.getElementById('main-header-icon').className = 'fa-solid fa-user-group';
+            mainHeaderTitle.textContent = 'Friends';
+            document.getElementById('main-header-icon').setAttribute('data-lucide', 'users');
         }
+        initLucide();
     }
 
     function openDM(friend) {
         currentChannelId = `dm_${friend.id}`;
         renderSidebar();
         mainHeaderTitle.textContent = friend.username;
-        document.getElementById('main-header-icon').className = 'fa-solid fa-user';
+        document.getElementById('main-header-icon').setAttribute('data-lucide', 'user');
         chatInput.disabled = false;
         chatMessages.innerHTML = '';
+        welcomeMessage.style.display = 'none';
         socket.emit('get-dms', friend.id, (res) => {
             if(res.success) res.messages.forEach(m => appendMessage(m.sender, m.text, m.senderId === currentUser.id));
         });
+        initLucide();
     }
 
-    // --- WebRTC & Signal ---
+    // --- WebRTC Logic ---
     function initWebRTC() {
         myPeer = new Peer(undefined, { host: '0.peerjs.com', port: 443, secure: true });
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -159,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 call.on('stream', userStream => handleRemoteStream(call.peer, userStream));
                 peers[call.peer] = call;
             });
-        });
+        }).catch(err => console.error("Could not access microphone:", err));
     }
 
     function joinChannel(serverId, channel) {
@@ -167,14 +173,15 @@ document.addEventListener('DOMContentLoaded', () => {
             currentChannelId = channel.id;
             renderSidebar();
             chatInput.disabled = false;
-            chatMessages.innerHTML = `<div class="welcome-message"><h2>Welcome to # ${channel.name}</h2></div>`;
+            welcomeMessage.style.display = 'none';
+            chatMessages.innerHTML = `<div class="welcome-notif"><h3>Welcome to #${channel.name}</h3></div>`;
             return;
         }
 
-        // Voice Logic
+        // Voice Room Logic
         currentChannelId = channel.id;
         renderSidebar();
-        chatArea.style.display = 'none';
+        welcomeMessage.style.display = 'none';
         voiceGrid.style.display = 'grid';
         voiceControls.style.display = 'flex';
         document.getElementById('active-voice-channel').textContent = channel.name;
@@ -186,8 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('user-connected', (peerId, username) => {
         const call = myPeer.call(peerId, isScreenSharing ? screenStream : localStream);
-        call.on('stream', userStream => handleRemoteStream(peerId, userStream));
-        peers[peerId] = call;
+        if (call) {
+            call.on('stream', userStream => handleRemoteStream(peerId, userStream));
+            peers[peerId] = call;
+        }
         addVoiceCard(peerId, username, null, false);
     });
 
@@ -195,20 +204,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if(peers[peerId]) peers[peerId].close();
         document.querySelector(`[data-peer-id="${peerId}"]`)?.remove();
         delete peers[peerId];
+        if (voiceGrid.children.length === 0) {
+            voiceGrid.style.display = 'none';
+            voiceControls.style.display = 'none';
+            welcomeMessage.style.display = 'flex';
+        }
     });
 
     function handleRemoteStream(peerId, stream) {
         const card = document.querySelector(`[data-peer-id="${peerId}"]`);
         if(!card) return;
-        card.querySelector('audio').srcObject = stream;
+        const audio = card.querySelector('audio');
+        if (audio) audio.srcObject = stream;
+        
         const video = card.querySelector('video');
         if(stream.getVideoTracks().length > 0) {
             video.srcObject = stream;
             video.style.display = 'block';
-            card.classList.add('is-video');
+            card.querySelector('.avatar-ring').classList.add('has-video');
         } else {
             video.style.display = 'none';
-            card.classList.remove('is-video');
+            card.querySelector('.avatar-ring').classList.remove('has-video');
         }
     }
 
@@ -218,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = clone.querySelector('.voice-card');
         card.setAttribute('data-peer-id', peerId);
         card.querySelector('.user-label').textContent = username + (isSelf ? ' (You)' : '');
-        card.querySelector('.avatar-lg').style.backgroundImage = `url('https://ui-avatars.com/api/?name=${username}&background=random')`;
+        card.querySelector('.avatar-circle').style.backgroundImage = `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${username}')`;
         if(isSelf) card.querySelector('audio').muted = true;
         voiceGrid.appendChild(card);
     }
@@ -227,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendMessage(sender, text, isSelf) {
         const div = document.createElement('div');
         div.className = `message ${isSelf ? 'self' : ''}`;
-        div.innerHTML = `<strong>${sender}:</strong> <span>${text}</span>`;
+        div.innerHTML = `<strong>${sender}</strong> <span>${text}</span>`;
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
@@ -251,26 +267,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Controls ---
     micBtn.addEventListener('click', () => {
         isMuted = !isMuted;
-        localStream.getAudioTracks()[0].enabled = !isMuted;
-        micBtn.classList.toggle('danger', isMuted);
-        micBtn.innerHTML = `<i class="fa-solid fa-microphone${isMuted ? '-slash' : ''}"></i>`;
+        if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted;
+        micBtn.classList.toggle('leave-btn', isMuted);
+        micBtn.innerHTML = `<i data-lucide="mic${isMuted ? '-off' : ''}"></i>`;
+        initLucide();
+    });
+
+    deafenBtn.addEventListener('click', () => {
+        isDeafened = !isDeafened;
+        const allAudios = document.querySelectorAll('audio');
+        allAudios.forEach(a => {
+            if (a.parentElement.parentElement.getAttribute('data-peer-id') !== myPeer.id) {
+                a.muted = isDeafened;
+            }
+        });
+        deafenBtn.classList.toggle('leave-btn', isDeafened);
+        deafenBtn.innerHTML = `<i data-lucide="headphones${isDeafened ? '-off' : ''}"></i>`;
+        initLucide();
     });
 
     screenShareBtn.addEventListener('click', async () => {
-        if(!isScreenSharing) {
-            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            isScreenSharing = true;
-            screenShareBtn.classList.add('active');
-            updateStreams(screenStream);
-            const myCard = document.querySelector(`[data-peer-id="${myPeer.id}"]`);
-            const v = myCard.querySelector('video');
-            v.srcObject = screenStream; v.style.display = 'block';
-        } else {
-            screenStream.getTracks().forEach(t => t.stop());
-            isScreenSharing = false;
-            updateStreams(localStream);
-            const myCard = document.querySelector(`[data-peer-id="${myPeer.id}"]`);
-            myCard.querySelector('video').style.display = 'none';
+        try {
+            if(!isScreenSharing) {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                isScreenSharing = true;
+                screenShareBtn.classList.add('accent-glow');
+                updateStreams(screenStream);
+                const myCard = document.querySelector(`[data-peer-id="${myPeer.id}"]`);
+                const v = myCard.querySelector('video');
+                v.srcObject = screenStream; v.style.display = 'block';
+            } else {
+                screenStream.getTracks().forEach(t => t.stop());
+                isScreenSharing = false;
+                updateStreams(localStream);
+                const myCard = document.querySelector(`[data-peer-id="${myPeer.id}"]`);
+                myCard.querySelector('video').style.display = 'none';
+            }
+        } catch (err) {
+            console.error("Screen share failed:", err);
         }
     });
 
@@ -278,44 +312,37 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.values(peers).forEach(call => {
             const videoTrack = stream.getVideoTracks()[0];
             const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
-            if(sender) sender.replaceTrack(videoTrack);
-            else call.peerConnection.addTrack(videoTrack, stream);
+            if(sender && videoTrack) sender.replaceTrack(videoTrack).catch(e => console.error(e));
+            else if (videoTrack) call.peerConnection.addTrack(videoTrack, stream);
         });
     }
 
-    // --- Sidebars Toggle ---
-    mobileSidebarToggle.addEventListener('click', () => document.body.classList.toggle('sidebar-active'));
-    mobileMembersToggle.addEventListener('click', () => document.body.classList.toggle('members-active'));
-
-    // Nav home click → switch to friends view
-    document.getElementById('nav-home').addEventListener('click', () => {
-        currentContext = 'friends';
-        document.querySelectorAll('.rail-btn, .server-icon').forEach(el => el.classList.remove('active'));
-        document.getElementById('nav-home').classList.add('active');
-        renderServerList();
-        renderSidebar();
-        mainHeaderTitle.textContent = 'Friends';
-        document.getElementById('main-header-icon').className = 'fa-solid fa-user-group';
+    disconnectBtn.addEventListener('click', () => {
+        socket.emit('leave-channel', currentChannelId, myPeer.id);
+        voiceGrid.style.display = 'none';
+        voiceControls.style.display = 'none';
+        welcomeMessage.style.display = 'flex';
+        // Close all calls
+        Object.values(peers).forEach(call => call.close());
+        peers = {};
     });
 
-    // Modals
-    const joinServerModal = document.getElementById('join-server-modal');
+    // --- Modal Logic ---
     document.getElementById('nav-add-server').addEventListener('click', () => createServerModal.style.display = 'flex');
     document.getElementById('btn-add-friend').addEventListener('click', () => addFriendModal.style.display = 'flex');
-    if(document.getElementById('nav-join-server')) {
-        document.getElementById('nav-join-server').addEventListener('click', () => joinServerModal.style.display = 'flex');
-    }
-    if(document.getElementById('open-settings-btn')) {
-        document.getElementById('open-settings-btn').addEventListener('click', () => {
-            alert('Settings coming soon!');
-        });
-    }
-    document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', () => b.closest('.modal-overlay').style.display = 'none'));
+    document.getElementById('nav-join-server').addEventListener('click', () => joinServerModal.style.display = 'flex');
+    
+    document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', () => {
+        b.closest('.modal-overlay').style.display = 'none';
+    }));
 
     document.getElementById('confirm-create-server').addEventListener('click', () => {
         const n = document.getElementById('new-server-name').value;
+        if (!n) return;
         socket.emit('create-server', n, (res) => {
-            if(res.success) { servers.push(res.server); renderServerList();
+            if(res.success) { 
+                servers.push(res.server); 
+                renderServerList();
                 createServerModal.style.display = 'none';
             }
         });
@@ -323,18 +350,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('confirm-add-friend').addEventListener('click', () => {
         const n = document.getElementById('new-friend-username').value;
+        if (!n) return;
         socket.emit('add-friend', n, (res) => {
-            if(res.success) { friends.push(res.friend); renderSidebar(); addFriendModal.style.display = 'none'; }
-            else document.getElementById('add-friend-message').textContent = res.message;
+            if(res.success) { 
+                friends.push(res.friend); 
+                renderSidebar(); 
+                addFriendModal.style.display = 'none'; 
+            } else {
+                document.getElementById('add-friend-message').textContent = res.message;
+            }
         });
     });
 
-    if(document.getElementById('confirm-join-server')) {
-        document.getElementById('confirm-join-server').addEventListener('click', () => {
-            // Join server via link — placeholder for future backend integration
-            const link = document.getElementById('join-server-link').value.trim();
-            if(link) alert(`Join via link: ${link} (backend integration needed)`);
-            joinServerModal.style.display = 'none';
-        });
-    }
+    // Sidebar context home click
+    document.getElementById('nav-home').addEventListener('click', () => {
+        currentContext = 'friends';
+        document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+        renderSidebar();
+        switchMainView('home');
+    });
+
+    // Support Settings
+    document.getElementById('open-settings-btn').addEventListener('click', () => {
+        alert("Nexus Settings Interface coming soon!");
+    });
 });
