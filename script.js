@@ -287,15 +287,35 @@ document.addEventListener('DOMContentLoaded', () => {
     mobileSidebarToggle.addEventListener('click', () => document.body.classList.toggle('sidebar-active'));
     mobileMembersToggle.addEventListener('click', () => document.body.classList.toggle('members-active'));
 
+    // Nav home click → switch to friends view
+    document.getElementById('nav-home').addEventListener('click', () => {
+        currentContext = 'friends';
+        document.querySelectorAll('.rail-btn, .server-icon').forEach(el => el.classList.remove('active'));
+        document.getElementById('nav-home').classList.add('active');
+        renderServerList();
+        renderSidebar();
+        mainHeaderTitle.textContent = 'Friends';
+        document.getElementById('main-header-icon').className = 'fa-solid fa-user-group';
+    });
+
     // Modals
+    const joinServerModal = document.getElementById('join-server-modal');
     document.getElementById('nav-add-server').addEventListener('click', () => createServerModal.style.display = 'flex');
     document.getElementById('btn-add-friend').addEventListener('click', () => addFriendModal.style.display = 'flex');
+    if(document.getElementById('nav-join-server')) {
+        document.getElementById('nav-join-server').addEventListener('click', () => joinServerModal.style.display = 'flex');
+    }
+    if(document.getElementById('open-settings-btn')) {
+        document.getElementById('open-settings-btn').addEventListener('click', () => {
+            alert('Settings coming soon!');
+        });
+    }
     document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', () => b.closest('.modal-overlay').style.display = 'none'));
 
     document.getElementById('confirm-create-server').addEventListener('click', () => {
         const n = document.getElementById('new-server-name').value;
         socket.emit('create-server', n, (res) => {
-            if(res.success) { servers.push(res.server); renderServerList(); 
+            if(res.success) { servers.push(res.server); renderServerList();
                 createServerModal.style.display = 'none';
             }
         });
@@ -308,4 +328,13 @@ document.addEventListener('DOMContentLoaded', () => {
             else document.getElementById('add-friend-message').textContent = res.message;
         });
     });
+
+    if(document.getElementById('confirm-join-server')) {
+        document.getElementById('confirm-join-server').addEventListener('click', () => {
+            // Join server via link — placeholder for future backend integration
+            const link = document.getElementById('join-server-link').value.trim();
+            if(link) alert(`Join via link: ${link} (backend integration needed)`);
+            joinServerModal.style.display = 'none';
+        });
+    }
 });
