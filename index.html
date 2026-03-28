@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DC - Premium Messaging</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <!-- Auth Overlay -->
+    <div class="auth-overlay glass-panel" id="auth-overlay">
+        <div class="auth-box glass-panel glass-card">
+            <div class="auth-header">
+                <i class="fa-solid fa-microphone-lines pulse-icon"></i>
+                <h2>Welcome Back</h2>
+                <p>Login to your DC account</p>
+            </div>
+            <div class="form-group">
+                <input type="text" id="auth-username" placeholder="Username" autocomplete="off" class="glass-input">
+            </div>
+            <div class="form-group">
+                <input type="password" id="auth-password" placeholder="Password" autocomplete="off" class="glass-input">
+            </div>
+            <p id="auth-error" class="error-msg"></p>
+            <div class="auth-actions">
+                <button class="primary-btn fluid-btn" id="login-btn">Login</button>
+                <div class="auth-footer">
+                    <span>New here?</span>
+                    <button id="register-btn" class="text-link">Register Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="create-server-modal" style="display: none;">
+        <div class="modal-content glass-panel glass-card anim-scale">
+            <div class="modal-header">
+                <h2>Create Your Server</h2>
+                <button class="icon-btn close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Give your new server a name and start talking with friends.</p>
+                <div class="form-group">
+                    <input type="text" id="new-server-name" placeholder="Server Name" class="glass-input">
+                </div>
+                <button class="primary-btn full-width" id="confirm-create-server">Create Server</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="add-friend-modal" style="display: none;">
+        <div class="modal-content glass-panel glass-card anim-scale">
+            <div class="modal-header">
+                <h2>Add a Friend</h2>
+                <button class="icon-btn close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>You can add friends by their DC username.</p>
+                <div class="form-group">
+                    <input type="text" id="new-friend-username" placeholder="Username" class="glass-input">
+                </div>
+                <p id="add-friend-message" class="error-msg"></p>
+                <button class="primary-btn full-width" id="confirm-add-friend">Send Request</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;">
+        <div class="background-vignette"></div>
+        <div class="background-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <button id="mobile-sidebar-toggle" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+            <h1 id="mobile-header-title">DC</h1>
+            <button id="mobile-members-toggle" class="icon-btn"><i class="fa-solid fa-users"></i></button>
+        </header>
+
+        <!-- Sidebar Navigation -->
+        <nav class="server-list glass-panel" id="main-nav">
+            <div class="server-icon home active tooltip" data-tooltip="Home" id="nav-home">
+                <i class="fa-solid fa-message"></i>
+            </div>
+            <div class="server-separator"></div>
+            <div id="dynamic-server-list" class="dynamic-list"></div>
+            <div class="server-separator"></div>
+            <div class="server-icon add-server tooltip" data-tooltip="Create Server" id="nav-add-server">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+        </nav>
+
+        <nav class="channel-sidebar glass-panel" id="channel-sidebar">
+            <div class="sidebar-header">
+                <h2 id="sidebar-context-title">FRIENDS</h2>
+                <button class="icon-btn secondary-btn" id="btn-add-friend"><i class="fa-solid fa-user-plus"></i></button>
+            </div>
+            <ul class="channel-list" id="dynamic-channel-list"></ul>
+            
+            <div class="user-footer">
+                <div class="user-card glass-panel sm">
+                    <div class="avatar-sm" id="my-avatar">
+                        <div class="status-dot online"></div>
+                    </div>
+                    <div class="user-meta">
+                        <span id="my-username-display" class="username">User</span>
+                        <span class="status">#1337</span>
+                    </div>
+                    <div class="user-actions">
+                        <button class="icon-btn sm"><i class="fa-solid fa-gear"></i></button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-view glass-panel">
+            <header class="view-header">
+                <div class="header-info">
+                    <i class="fa-solid fa-user-group" id="main-header-icon"></i>
+                    <h2 id="main-header-title">Friends</h2>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn tooltip" data-tooltip="Invite Friends" id="header-invite-btn" style="display: none;"><i class="fa-solid fa-user-plus"></i></button>
+                </div>
+            </header>
+
+            <div class="view-container">
+                <!-- Voice Grid (Hidden when not in voice) -->
+                <div id="voice-grid" class="voice-grid" style="display: none;"></div>
+                
+                <!-- Chat Area -->
+                <div id="chat-area" class="chat-area">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="welcome-message">
+                            <i class="fa-solid fa-user-group"></i>
+                            <h2>Choose a conversation to start chatting!</h2>
+                        </div>
+                    </div>
+                    <div class="chat-input-wrapper glass-panel">
+                        <input type="text" id="chat-input" placeholder="Message..." disabled>
+                        <div class="input-actions">
+                            <button class="icon-btn"><i class="fa-solid fa-face-smile"></i></button>
+                            <button class="icon-btn primary" id="send-msg-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Controls Overlay -->
+            <div class="voice-controls glass-panel anim-slide-up" id="voice-controls" style="display: none;">
+                <div class="voice-info">
+                    <span class="channel-name" id="active-voice-channel">Voice Channel</span>
+                </div>
+                <div class="control-group">
+                    <button class="control-btn" id="mic-btn" title="Toggle Mic"><i class="fa-solid fa-microphone"></i></button>
+                    <button class="control-btn" id="deafen-btn" title="Deafen"><i class="fa-solid fa-headphones"></i></button>
+                    <button class="control-btn primary" id="screen-share-btn" title="Share Screen"><i class="fa-solid fa-desktop"></i></button>
+                    <button class="control-btn danger" id="disconnect-btn" title="Disconnect"><i class="fa-solid fa-phone-slash"></i></button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Members Sidebar -->
+        <aside class="members-sidebar glass-panel" id="members-sidebar">
+            <div class="sidebar-header">
+                <h3>MEMBERS</h3>
+            </div>
+            <div class="members-list" id="dynamic-member-list"></div>
+        </aside>
+    </div>
+
+    <!-- Templates -->
+    <template id="user-card-template">
+        <div class="voice-card glass-panel" data-peer-id="">
+            <div class="avatar-lg"></div>
+            <audio autoplay></audio>
+            <video class="screen-view" autoplay playsinline style="display:none;"></video>
+            <div class="voice-indicator"></div>
+            <span class="user-label">User</span>
+            <div class="card-status"><i class="fa-solid fa-microphone"></i></div>
+        </div>
+    </template>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
