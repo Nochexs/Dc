@@ -844,9 +844,29 @@ document.addEventListener('DOMContentLoaded', () => {
             if (n) showToast(`${n} isteği reddedildi`);
         }));
 
-    // Gönderdiğiniz istek reddedildiğinde
     socket.on('friend-request-rejected', d => {
         showToast(`${d.byUsername} arkadaşlık isteğini reddetti`, 'error');
+    });
+
+    // ── DURUM TAKİBİ (REAL-TIME) ──────────────────────────────────────
+    socket.on('friend-online', d => {
+        onlineFriends.add(d.userId);
+        if (currentContext === 'friends') renderSidebar();
+        refreshMembersPanel();
+    });
+
+    socket.on('friend-offline', d => {
+        onlineFriends.delete(d.userId);
+        if (currentContext === 'friends') renderSidebar();
+        refreshMembersPanel();
+    });
+
+    socket.on('friend-status', d => {
+        // Arkadaşın durumunu friends array'inde güncelle
+        const f = friends.find(u => u.id === d.userId);
+        if (f) f.status = d.status;
+        if (currentContext === 'friends') renderSidebar();
+        refreshMembersPanel();
     });
     }
 
@@ -1096,8 +1116,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tema
     let isLightTheme = false;
-    document.getElementById('as-theme-toggle').addEventListener('click', () => {
-        isLightTheme = !isLightTheme;
+    // Oturumu yüklemeden önce temayı çek
+    try {
+        const savedTheme = localStorage.getItem('nexus_theme');
+        if (savedTheme === 'light') toggleTheme(true);
+    } catch(e) {}
+
+    function toggleTheme(forceLight) {
+        isLightTheme = forceLight !== undefined ? forceLight : !isLightTheme;
+        localStorage.setItem('nexus_theme', isLightTheme ? 'light' : 'dark');
+        
         if (isLightTheme) {
             document.documentElement.style.setProperty('--bg-dark',       '#eef0f5');
             document.documentElement.style.setProperty('--glass-panel',   'rgba(240,240,255,0.85)');
@@ -1107,7 +1135,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.documentElement.style.setProperty('--text-secondary','#5a5080');
             document.body.style.background = '#eef0f5';
             document.getElementById('as-theme-toggle').textContent = '🌙 Koyu Moda Geç';
-            showToast('Açık tema aktif');
         } else {
             document.documentElement.style.setProperty('--bg-dark',       '#050208');
             document.documentElement.style.setProperty('--glass-panel',   'rgba(25,20,40,0.60)');
@@ -1117,8 +1144,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.documentElement.style.setProperty('--text-secondary','#94a3b8');
             document.body.style.background = '#050208';
             document.getElementById('as-theme-toggle').textContent = '☀️ Açık Moda Geç';
-            showToast('Koyu tema aktif');
         }
+    }
+
+    document.getElementById('as-theme-toggle').addEventListener('click', () => {
+        toggleTheme();
+        showToast(isLightTheme ? 'Açık tema aktif' : 'Koyu tema aktif');
     });
 
     // Ayarlardan çıkış
