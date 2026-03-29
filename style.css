@@ -16,7 +16,7 @@
     --rail-w:    68px;
     --sidebar-w: 236px;
     --members-w: 212px;
-    --chat-w:    300px;
+    --chat-w:    380px;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }

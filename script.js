@@ -319,8 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceGrid.style.display = 'none'; voiceControls.style.display = 'none';
         welcomeMessage.style.display = 'flex'; friendProfileView.style.display = 'none';
         document.getElementById('center-chat-area').style.display = 'none';
-        const globalActions = document.getElementById('global-server-actions');
-        if (globalActions) globalActions.style.display = 'none';
+        const inviteBtn = document.getElementById('btn-invite-server');
+        const settingsBtn = document.getElementById('btn-server-settings');
+        if (inviteBtn) inviteBtn.style.display = 'none';
+        if (settingsBtn) settingsBtn.style.display = 'none';
         
         const rsPanel = document.getElementById('right-side-panel');
         if (rsPanel) rsPanel.style.display = 'flex';
@@ -357,10 +359,17 @@ document.addEventListener('DOMContentLoaded', () => {
         currentContext = s.id; currentServerId = s.id;
         currentChannelType = null;
         
+        const chatArea = document.getElementById('center-chat-area');
         const rsPanel = document.getElementById('right-side-panel');
-        if (rsPanel) rsPanel.style.display = 'none';
+        if (rsPanel) {
+            rsPanel.style.display = 'flex';
+            rsPanel.appendChild(chatArea);
+        }
         
-        document.getElementById('global-server-actions').style.display = 'flex';
+        const inviteBtn = document.getElementById('btn-invite-server');
+        const settingsBtn = document.getElementById('btn-server-settings');
+        if (inviteBtn) inviteBtn.style.display = '';
+        if (settingsBtn) settingsBtn.style.display = '';
         
         chatMessages.innerHTML = ''; chatInput.disabled = true;
         friendProfileView.style.display = 'none';
