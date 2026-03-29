@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages       = document.getElementById('chat-messages');
     const chatInput          = document.getElementById('chat-input');
     const sendMsgBtn         = document.getElementById('send-msg-btn');
+    const chatPanel          = document.getElementById('chat-panel');
+    const chatPanelTitle     = document.getElementById('chat-panel-title');
 
     const micBtn             = document.getElementById('mic-btn');
     const deafenBtn          = document.getElementById('deafen-btn');
@@ -33,13 +35,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAddFriend       = document.getElementById('btn-add-friend');
     const btnInviteServer    = document.getElementById('btn-invite-server');
 
-    // Modals
     const createServerModal  = document.getElementById('create-server-modal');
     const addFriendModal     = document.getElementById('add-friend-modal');
     const joinServerModal    = document.getElementById('join-server-modal');
+    const settingsModal      = document.getElementById('settings-modal');
+
+    // Toast
+    const toastEl = document.getElementById('toast');
 
     // --- State ---
-    // Render.com'da ve local'de çalışır
     let socket = io(window.location.origin, {
         transports: ['websocket', 'polling'],
         reconnection: true,
@@ -52,29 +56,60 @@ document.addEventListener('DOMContentLoaded', () => {
     let servers         = [];
     let pendingRequests = [];
     let currentContext  = 'friends';
-    let currentChannelId = null;
-    let currentServerId  = null;
+    let currentChannelId  = null;
+    let currentServerId   = null;
+    let currentChannelType = null; // 'text' | 'voice' | 'dm'
     let peers           = {};
     let localStream     = null;
     let screenStream    = null;
     let isMuted         = false;
     let isDeafened      = false;
     let isScreenSharing = false;
+    let audioDevices    = [];
+    let selectedMicId   = null;
 
-    // --- Utility ---
-    function initLucide() {
-        if (window.lucide) lucide.createIcons();
-    }
+    // ============================================================
+    // UTILITY
+    // ============================================================
+    function initLucide() { if (window.lucide) lucide.createIcons(); }
 
     function showError(msg) {
         authError.style.color = 'var(--accent-red)';
         authError.textContent = msg;
     }
 
-    // --- Auth ---
-    // Avatar randomizer
-    const avatarSeeds = ['Nexus','Byte','Cipher','Nova','Pixel','Storm','Flux','Zephyr'];
+    function showToast(msg, type = 'success') {
+        toastEl.textContent = msg;
+        toastEl.className = `toast toast-${type} show`;
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(() => {
+            toastEl.classList.remove('show');
+        }, 3000);
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function timeStr(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        const now = new Date();
+        const isToday = d.toDateString() === now.toDateString();
+        if (isToday) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) + ' ' +
+               d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ============================================================
+    // AUTH
+    // ============================================================
     let avatarSeed = 'Nexus';
+
     document.getElementById('refresh-avatar-btn').addEventListener('click', () => {
         avatarSeed = Math.random().toString(36).substring(2, 10);
         document.querySelector('#auth-avatar-preview img').src =
@@ -84,9 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleAuth(type) {
         const username = authUsernameInput.value.trim();
         const password = authPasswordInput.value.trim();
-        if (!username || !password) return showError('Please fill in all fields.');
+        if (!username || !password) return showError('Lütfen tüm alanları doldurun.');
 
-        const profilePic = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed || username}`;
+        const profilePic = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+        authError.textContent = '';
 
         socket.emit(type, { username, password, profilePic }, (res) => {
             if (res.success) {
@@ -98,8 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     authOverlay.style.display = 'none';
                     appContainer.style.display = 'flex';
-
-                    // Update UI sidebar user profile
                     document.querySelector('#my-avatar img').src = currentUser.profilePic;
 
                     initWebRTC();
@@ -107,10 +141,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderSidebar();
                     updateNotifBadge();
                     initLucide();
+
+                    // Davet linki varsa sor
+                    if (window._pendingInvite) {
+                        const inv = window._pendingInvite;
+                        delete window._pendingInvite;
+                        if (confirm(`Sunucuya katılmak istiyor musunuz?\nID: ${inv}`)) {
+                            socket.emit('join-server', inv, (res) => {
+                                if (res.success) {
+                                    servers.push(res.server);
+                                    renderServerList();
+                                    activateServer(res.server);
+                                } else {
+                                    showToast(res.message, 'error');
+                                }
+                            });
+                        }
+                    }
                 } else {
-                    // Register success
                     authError.style.color = 'var(--accent-green)';
-                    authError.textContent = 'Account created! You can now log in.';
+                    authError.textContent = res.message;
                     authPasswordInput.value = '';
                 }
             } else {
@@ -121,29 +171,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loginBtn.addEventListener('click', () => handleAuth('login'));
     registerBtn.addEventListener('click', () => handleAuth('register'));
+    authPasswordInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleAuth('login'); });
+    authUsernameInput.addEventListener('keypress', e => { if (e.key === 'Enter') authPasswordInput.focus(); });
 
-    // Also handle Enter key on inputs
-    authPasswordInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleAuth('login');
-    });
-
-    // --- Navigation ---
+    // ============================================================
+    // NAV
+    // ============================================================
     document.getElementById('nav-friends').addEventListener('click', () => {
-        currentContext = 'friends';
-        currentChannelId = null;
-        currentServerId = null;
-        chatInput.disabled = true;
-        voiceGrid.style.display = 'none';
+        currentContext      = 'friends';
+        currentChannelId    = null;
+        currentServerId     = null;
+        currentChannelType  = null;
+        chatInput.disabled  = true;
+        voiceGrid.style.display    = 'none';
         voiceControls.style.display = 'none';
         welcomeMessage.style.display = 'flex';
-        chatMessages.innerHTML = '';
+        chatMessages.innerHTML      = '';
+        chatPanelTitle.textContent  = 'Chat';
         document.querySelectorAll('.server-icon, .rail-action-btn').forEach(el => el.classList.remove('active'));
         document.getElementById('nav-friends').classList.add('active');
         renderSidebar();
         switchMainView('home');
     });
 
-    // --- Server List Render ---
+    // ============================================================
+    // SERVER LIST
+    // ============================================================
     function renderServerList() {
         dynamicServerList.innerHTML = '';
         servers.forEach(s => {
@@ -152,20 +205,26 @@ document.addEventListener('DOMContentLoaded', () => {
             el.setAttribute('data-tooltip', s.name);
             el.textContent = s.name.substring(0, 2).toUpperCase();
             el.addEventListener('click', () => {
-                currentContext = s.id;
-                currentServerId = s.id;
+                activateServer(s);
                 document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('active'));
                 document.getElementById('nav-friends').classList.remove('active');
                 el.classList.add('active');
-                renderSidebar();
-                switchMainView('server', s);
             });
             dynamicServerList.appendChild(el);
         });
         initLucide();
     }
 
-    // --- Sidebar Render ---
+    function activateServer(s) {
+        currentContext  = s.id;
+        currentServerId = s.id;
+        renderSidebar();
+        switchMainView('server', s);
+    }
+
+    // ============================================================
+    // SIDEBAR
+    // ============================================================
     function renderSidebar() {
         dynamicChannelList.innerHTML = '';
 
@@ -175,19 +234,18 @@ document.addEventListener('DOMContentLoaded', () => {
             btnInviteServer.style.display = 'none';
 
             if (friends.length === 0) {
-                const empty = document.createElement('li');
-                empty.style.cssText = 'color:var(--text-secondary);font-size:13px;padding:20px 14px;opacity:0.6;';
-                empty.textContent = 'No friends yet. Add some!';
-                dynamicChannelList.appendChild(empty);
+                const li = document.createElement('li');
+                li.style.cssText = 'color:var(--text-secondary);font-size:13px;padding:20px 14px;opacity:0.6;pointer-events:none;';
+                li.textContent = 'Henüz arkadaşın yok. Ekle!';
+                dynamicChannelList.appendChild(li);
             }
 
             friends.forEach(f => {
                 const li = document.createElement('li');
                 li.className = currentChannelId === `dm_${f.id}` ? 'active' : '';
-                li.innerHTML = `
-                    <img src="${f.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.username}`}"
-                         style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
-                    <span>${f.username}</span>`;
+                li.innerHTML = `<img src="${f.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.username}`}"
+                    style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0;">
+                    <span>${escapeHtml(f.username)}</span>`;
                 li.addEventListener('click', () => openDM(f));
                 dynamicChannelList.appendChild(li);
             });
@@ -196,32 +254,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const server = servers.find(s => s.id === currentContext);
             if (!server) return;
             sidebarContextTitle.textContent = server.name.toUpperCase();
-            btnAddFriend.style.display = 'none';
+            btnAddFriend.style.display  = 'none';
             btnInviteServer.style.display = '';
 
-            // Section labels
-            const textChannels = server.channels.filter(c => c.type === 'text');
-            const voiceChannels = server.channels.filter(c => c.type === 'voice');
+            const textChs  = server.channels.filter(c => c.type === 'text');
+            const voiceChs = server.channels.filter(c => c.type === 'voice');
 
-            function renderSection(label, channels) {
-                if (channels.length === 0) return;
+            function renderSection(label, channels, iconFn) {
+                if (!channels.length) return;
                 const header = document.createElement('li');
-                header.style.cssText = 'font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:1px;padding:10px 14px 4px;cursor:default;pointer-events:none;';
-                header.textContent = label.toUpperCase();
+                header.className = 'ch-section-header';
+                header.textContent = label;
                 dynamicChannelList.appendChild(header);
 
                 channels.forEach(ch => {
                     const li = document.createElement('li');
-                    li.className = currentChannelId === ch.id ? 'active' : '';
-                    const iconType = ch.type === 'voice' ? 'mic' : 'hash';
-                    li.innerHTML = `<i data-lucide="${iconType}"></i> <span>${ch.name}</span>`;
+                    li.className = `ch-item ${currentChannelId === ch.id ? 'active' : ''}`;
+                    li.dataset.type = ch.type;
+                    li.innerHTML = `<i data-lucide="${iconFn(ch)}"></i><span>${escapeHtml(ch.name)}</span>`;
+                    if (ch.type === 'voice' && currentChannelId === ch.id) {
+                        li.classList.add('voice-active');
+                    }
                     li.addEventListener('click', () => joinChannel(server.id, ch));
                     dynamicChannelList.appendChild(li);
                 });
             }
 
-            renderSection('Text Channels', textChannels);
-            renderSection('Voice Channels', voiceChannels);
+            renderSection('METİN KANALLARI', textChs, () => 'hash');
+            renderSection('SES KANALLARI', voiceChs, () => 'volume-2');
         }
         initLucide();
     }
@@ -231,24 +291,28 @@ document.addEventListener('DOMContentLoaded', () => {
             mainHeaderTitle.textContent = data.name;
             mainHeaderIcon.setAttribute('data-lucide', 'server');
         } else {
-            mainHeaderTitle.textContent = 'Friends';
+            mainHeaderTitle.textContent = 'Arkadaşlar';
             mainHeaderIcon.setAttribute('data-lucide', 'users');
         }
         initLucide();
     }
 
-    // --- Direct Messages ---
+    // ============================================================
+    // DM
+    // ============================================================
     function openDM(friend) {
-        currentChannelId = `dm_${friend.id}`;
-        currentServerId = null;
+        currentChannelId   = `dm_${friend.id}`;
+        currentServerId    = null;
+        currentChannelType = 'dm';
         renderSidebar();
         mainHeaderTitle.textContent = friend.username;
         mainHeaderIcon.setAttribute('data-lucide', 'message-circle');
-        chatInput.disabled = false;
-        chatInput.placeholder = `Message ${friend.username}...`;
-        chatMessages.innerHTML = '';
+        chatPanelTitle.textContent  = friend.username;
+        chatInput.disabled          = false;
+        chatInput.placeholder       = `${friend.username} ile mesajlaş...`;
+        chatMessages.innerHTML      = '';
         welcomeMessage.style.display = 'none';
-        voiceGrid.style.display = 'none';
+        voiceGrid.style.display      = 'none';
 
         socket.emit('get-dms', friend.id, (res) => {
             if (res.success) {
@@ -258,15 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
         initLucide();
     }
 
-    // --- WebRTC ---
+    // ============================================================
+    // WebRTC
+    // ============================================================
     function initWebRTC() {
         myPeer = new Peer(undefined, { host: '0.peerjs.com', port: 443, secure: true });
-
-        myPeer.on('open', id => {
-            console.log('PeerJS ready:', id);
-        });
-
-        myPeer.on('error', err => console.error('PeerJS error:', err));
+        myPeer.on('open', id => console.log('PeerJS hazır:', id));
+        myPeer.on('error', err => console.error('PeerJS hatası:', err));
 
         navigator.mediaDevices.getUserMedia({ audio: true, video: false })
             .then(stream => {
@@ -276,57 +338,97 @@ document.addEventListener('DOMContentLoaded', () => {
                     call.on('stream', userStream => handleRemoteStream(call.peer, userStream));
                     peers[call.peer] = call;
                 });
+                // Mikrofon cihazlarını listele
+                loadAudioDevices();
             })
-            .catch(err => console.warn('Mic access denied:', err));
+            .catch(err => console.warn('Mikrofon erişimi reddedildi:', err));
     }
 
+    async function loadAudioDevices() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            audioDevices = devices.filter(d => d.kind === 'audioinput');
+        } catch(e) {}
+    }
+
+    // ============================================================
+    // JOIN CHANNEL
+    // ============================================================
     function joinChannel(serverId, channel) {
         if (channel.type === 'text') {
-            // Leave voice if in one
-            if (voiceGrid.style.display === 'grid') {
-                leaveVoice();
-            }
-            currentChannelId = channel.id;
-            currentServerId = serverId;
+            if (voiceGrid.style.display === 'grid') leaveVoice(false);
+            currentChannelId   = channel.id;
+            currentServerId    = serverId;
+            currentChannelType = 'text';
             renderSidebar();
-            chatInput.disabled = false;
-            chatInput.placeholder = `Message #${channel.name}...`;
+            chatInput.disabled     = false;
+            chatInput.placeholder  = `#${channel.name} kanalına mesaj gönder...`;
+            chatPanelTitle.textContent = `#${channel.name}`;
             welcomeMessage.style.display = 'none';
             chatMessages.innerHTML = '';
 
-            // Load existing messages
             socket.emit('get-channel-messages', channel.id, (res) => {
                 if (res.success && res.messages.length > 0) {
                     res.messages.forEach(m => appendMessage(m.sender, m.text, m.senderId === currentUser.id, m.profilePic, m.timestamp));
                 } else {
-                    chatMessages.innerHTML = `<div class="welcome-notif"><i data-lucide="hash"></i><h3>#${channel.name}</h3><p>Be the first to send a message!</p></div>`;
+                    chatMessages.innerHTML = `
+                        <div class="welcome-notif">
+                            <i data-lucide="hash" style="width:48px;height:48px;color:var(--accent-purple);margin-bottom:16px;"></i>
+                            <h3>#${escapeHtml(channel.name)}</h3>
+                            <p>Bu kanalın başlangıcı. İlk mesajı sen gönder!</p>
+                        </div>`;
                     initLucide();
                 }
             });
 
-            // Join socket room for real-time
-            socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer ? myPeer.id : null }, () => {});
+            // ÖNEMLİ: Metin kanalına katılırken peerId GÖNDERME
+            socket.emit('join-channel', { serverId, channelId: channel.id, peerId: null }, () => {});
             return;
         }
 
-        // Voice Channel
-        if (!myPeer) return alert('PeerJS not ready yet. Please wait a moment.');
+        // ---- SES KANALI ----
+        if (!myPeer || !myPeer.id) {
+            showToast('PeerJS henüz hazır değil, bir saniye bekle...', 'error');
+            return;
+        }
 
-        currentChannelId = channel.id;
-        currentServerId = serverId;
+        currentChannelId   = channel.id;
+        currentServerId    = serverId;
+        currentChannelType = 'voice';
         renderSidebar();
         welcomeMessage.style.display = 'none';
-        voiceGrid.style.display = 'grid';
-        voiceGrid.innerHTML = '';
-        voiceControls.style.display = 'flex';
+        voiceGrid.style.display      = 'grid';
+        voiceGrid.innerHTML          = '';
+        voiceControls.style.display  = 'flex';
         document.getElementById('active-voice-channel').textContent = channel.name;
 
+        // Önce kendi kartını ekle
         addVoiceCard(myPeer.id, currentUser.username, null, true);
-        socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer.id }, () => {});
+
+        // Sunucuya katıl ve mevcut kullanıcıları al
+        socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer.id }, (res) => {
+            if (!res) return;
+            // Odada zaten olan kullanıcıları ekle ve ara
+            if (res.existingPeers && res.existingPeers.length > 0) {
+                res.existingPeers.forEach(ep => {
+                    addVoiceCard(ep.peerId, ep.username, null, false);
+                    // Mevcut kullanıcıyı ara (ikinci giren birinci ile konuşacak)
+                    const streamToSend = isScreenSharing && screenStream ? screenStream : localStream;
+                    if (streamToSend) {
+                        const call = myPeer.call(ep.peerId, streamToSend);
+                        if (call) {
+                            call.on('stream', userStream => handleRemoteStream(ep.peerId, userStream));
+                            peers[ep.peerId] = call;
+                        }
+                    }
+                });
+            }
+        });
     }
 
+    // Yeni kullanıcı bağlandı (birinci kullanıcı bu eventi alır)
     socket.on('user-connected', (peerId, username) => {
-        if (!localStream && !screenStream) return;
+        if (currentChannelType !== 'voice') return;
         const streamToSend = isScreenSharing && screenStream ? screenStream : localStream;
         if (streamToSend) {
             const call = myPeer.call(peerId, streamToSend);
@@ -339,11 +441,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('user-disconnected', peerId => {
-        if (peers[peerId]) peers[peerId].close();
+        if (peers[peerId]) { peers[peerId].close(); delete peers[peerId]; }
         document.querySelector(`[data-peer-id="${peerId}"]`)?.remove();
-        delete peers[peerId];
-        if (voiceGrid.children.length === 0) {
-            leaveVoice();
+        if (voiceGrid.style.display === 'grid' && voiceGrid.querySelectorAll('.voice-card').length === 0) {
+            leaveVoice(false);
         }
     });
 
@@ -353,47 +454,57 @@ document.addEventListener('DOMContentLoaded', () => {
         const audio = card.querySelector('audio');
         if (audio) audio.srcObject = stream;
         const video = card.querySelector('video');
-        if (stream.getVideoTracks().length > 0) {
+        if (video && stream.getVideoTracks().length > 0) {
             video.srcObject = stream;
             video.style.display = 'block';
             card.querySelector('.avatar-ring').classList.add('has-video');
-        } else {
+        } else if (video) {
             video.style.display = 'none';
             card.querySelector('.avatar-ring').classList.remove('has-video');
         }
     }
 
     function addVoiceCard(peerId, username, stream, isSelf) {
+        if (document.querySelector(`[data-peer-id="${peerId}"]`)) return; // Duplicate önle
         const template = document.getElementById('user-card-template');
         const clone = template.content.cloneNode(true);
         const card = clone.querySelector('.voice-card');
         card.setAttribute('data-peer-id', peerId);
-        card.querySelector('.user-label').textContent = username + (isSelf ? ' (You)' : '');
+        card.querySelector('.user-label').textContent = username + (isSelf ? ' (Sen)' : '');
         card.querySelector('.avatar-circle').style.backgroundImage =
-            `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${username}')`;
+            `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(username)}')`;
         if (isSelf) card.querySelector('audio').muted = true;
         voiceGrid.appendChild(card);
+        initLucide();
     }
 
-    function leaveVoice() {
-        voiceGrid.style.display = 'none';
-        voiceGrid.innerHTML = '';
-        voiceControls.style.display = 'none';
+    function leaveVoice(notify = true) {
+        if (notify && currentChannelId && currentChannelType === 'voice') {
+            socket.emit('leave-channel', currentChannelId, myPeer?.id);
+        }
+        Object.values(peers).forEach(call => call.close());
+        peers = {};
+        voiceGrid.style.display      = 'none';
+        voiceGrid.innerHTML          = '';
+        voiceControls.style.display  = 'none';
         welcomeMessage.style.display = 'flex';
+        currentChannelType = null;
+        renderSidebar();
     }
 
-    // --- Messaging ---
+    // ============================================================
+    // CHAT MESSAGES
+    // ============================================================
     function appendMessage(sender, text, isSelf, profilePic, timestamp) {
         const div = document.createElement('div');
         div.className = `message ${isSelf ? 'self' : ''}`;
-        const avatar = profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sender}`;
-        const time = timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        const avatar = profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(sender)}`;
         div.innerHTML = `
-            <img class="msg-avatar" src="${avatar}" alt="${sender}">
+            <img class="msg-avatar" src="${avatar}" alt="${escapeHtml(sender)}">
             <div class="msg-body">
                 <div class="msg-meta">
-                    <strong>${sender}</strong>
-                    <span class="msg-time">${time}</span>
+                    <strong>${escapeHtml(sender)}</strong>
+                    <span class="msg-time">${timeStr(timestamp)}</span>
                 </div>
                 <span>${escapeHtml(text)}</span>
             </div>`;
@@ -401,39 +512,45 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function escapeHtml(str) {
-        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
     function sendMessage() {
         const val = chatInput.value.trim();
         if (!val || !currentChannelId) return;
-        if (currentChannelId.startsWith('dm_')) {
+
+        if (currentChannelType === 'dm') {
             const friendId = currentChannelId.split('_')[1];
             socket.emit('send-dm', { friendId, text: val });
         } else {
-            socket.emit('send-chat-message', currentChannelId, val);
+            // ÖNEMLİ: serverId de gönder
+            socket.emit('send-chat-message', {
+                channelId: currentChannelId,
+                serverId: currentServerId,
+                text: val
+            });
         }
         appendMessage(currentUser.username, val, true, currentUser.profilePic, new Date().toISOString());
         chatInput.value = '';
     }
 
-    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
     sendMsgBtn.addEventListener('click', sendMessage);
 
+    // Gelen kanal mesajı
     socket.on('chat-message', d => {
         if (d.channelId === currentChannelId) {
             appendMessage(d.sender, d.text, false, d.profilePic, d.timestamp);
         }
     });
 
+    // Gelen DM
     socket.on('dm-message', d => {
         if (currentChannelId === `dm_${d.friendId}`) {
             appendMessage(d.message.sender, d.message.text, false, d.message.profilePic, d.message.timestamp);
         }
     });
 
-    // --- Voice Controls ---
+    // ============================================================
+    // VOICE CONTROLS
+    // ============================================================
     micBtn.addEventListener('click', () => {
         isMuted = !isMuted;
         if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
@@ -444,17 +561,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     deafenBtn.addEventListener('click', () => {
         isDeafened = !isDeafened;
-        document.querySelectorAll('audio').forEach(a => {
+        document.querySelectorAll('.voice-card audio').forEach(a => {
             const card = a.closest('.voice-card');
-            if (card && card.getAttribute('data-peer-id') !== myPeer?.id) {
-                a.muted = isDeafened;
-            }
+            if (card && card.getAttribute('data-peer-id') !== myPeer?.id) a.muted = isDeafened;
         });
         deafenBtn.classList.toggle('leave-btn', isDeafened);
-        deafenBtn.innerHTML = `<i data-lucide="${isDeafened ? 'headphones-off' : 'headphones'}"></i>`;
-        // headphones-off doesn't exist in lucide, use volume-x instead
         deafenBtn.innerHTML = `<i data-lucide="${isDeafened ? 'volume-x' : 'headphones'}"></i>`;
         initLucide();
+        showToast(isDeafened ? 'Sesi kapattın' : 'Ses açıldı');
     });
 
     screenShareBtn.addEventListener('click', async () => {
@@ -462,9 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isScreenSharing) {
                 screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
                 isScreenSharing = true;
-                screenShareBtn.classList.add('accent-glow');
-                screenShareBtn.style.color = 'var(--accent-cyan)';
-                screenShareBtn.style.boxShadow = 'var(--glow-cyan)';
+                screenShareBtn.classList.add('btn-active');
                 updateStreams(screenStream);
                 const myCard = document.querySelector(`[data-peer-id="${myPeer?.id}"]`);
                 if (myCard) {
@@ -472,25 +584,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     v.srcObject = screenStream;
                     v.style.display = 'block';
                 }
-                screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-                    stopScreenShare();
-                });
+                screenStream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
+                showToast('Ekran paylaşımı başladı', 'success');
             } else {
                 stopScreenShare();
             }
         } catch (err) {
-            console.error('Screen share failed:', err);
+            if (err.name !== 'NotAllowedError') showToast('Ekran paylaşımı başarısız', 'error');
         }
     });
 
     function stopScreenShare() {
         if (screenStream) screenStream.getTracks().forEach(t => t.stop());
         isScreenSharing = false;
-        screenShareBtn.style.color = '';
-        screenShareBtn.style.boxShadow = '';
+        screenShareBtn.classList.remove('btn-active');
         if (localStream) updateStreams(localStream);
         const myCard = document.querySelector(`[data-peer-id="${myPeer?.id}"]`);
         if (myCard) myCard.querySelector('video').style.display = 'none';
+        showToast('Ekran paylaşımı durduruldu');
     }
 
     function updateStreams(stream) {
@@ -498,34 +609,32 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!call.peerConnection) return;
             const videoTrack = stream.getVideoTracks()[0];
             const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-            if (sender && videoTrack) sender.replaceTrack(videoTrack).catch(e => console.warn(e));
+            if (sender && videoTrack) sender.replaceTrack(videoTrack).catch(console.warn);
             else if (videoTrack) call.peerConnection.addTrack(videoTrack, stream);
         });
     }
 
-    disconnectBtn.addEventListener('click', () => {
-        if (currentChannelId) socket.emit('leave-channel', currentChannelId, myPeer?.id);
-        Object.values(peers).forEach(call => call.close());
-        peers = {};
-        voiceGrid.innerHTML = '';
-        leaveVoice();
-    });
+    disconnectBtn.addEventListener('click', () => leaveVoice(true));
 
-    // --- Friends ---
+    // ============================================================
+    // FRIENDS & NOTIFICATIONS
+    // ============================================================
     socket.on('receive-friend-request', (request) => {
         pendingRequests.push(request);
         updateNotifBadge();
-        renderNotifPanel();
     });
 
     socket.on('friend-added', (friend) => {
-        friends.push(friend);
-        if (currentContext === 'friends') renderSidebar();
+        if (!friends.find(f => f.id === friend.id)) {
+            friends.push(friend);
+            if (currentContext === 'friends') renderSidebar();
+            showToast(`${friend.username} arkadaşlık isteğini kabul etti!`);
+        }
     });
 
     function updateNotifBadge() {
         if (pendingRequests.length > 0) {
-            notifBadge.style.display = 'block';
+            notifBadge.style.display = 'flex';
             notifBadge.textContent = pendingRequests.length > 9 ? '9+' : pendingRequests.length;
         } else {
             notifBadge.style.display = 'none';
@@ -535,21 +644,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderNotifPanel() {
         notifList.innerHTML = '';
         if (pendingRequests.length === 0) {
-            notifList.innerHTML = '<div class="no-notif">No new notifications</div>';
+            notifList.innerHTML = '<div class="no-notif">Yeni bildirim yok</div>';
             return;
         }
         pendingRequests.forEach(req => {
             const item = document.createElement('div');
             item.className = 'notif-item';
             item.innerHTML = `
-                <img src="${req.fromPic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.fromUsername}`}" alt="${req.fromUsername}">
+                <img src="${req.fromPic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.fromUsername}`}" alt="${escapeHtml(req.fromUsername)}">
                 <div class="notif-info">
-                    <p><strong>${req.fromUsername}</strong> sent you a friend request</p>
-                    <span>${new Date(req.timestamp).toLocaleDateString()}</span>
+                    <p><strong>${escapeHtml(req.fromUsername)}</strong> sana arkadaşlık isteği gönderdi</p>
+                    <span>${timeStr(req.timestamp)}</span>
                 </div>
                 <div class="notif-actions">
-                    <button class="accept-btn" data-id="${req.fromId}">Accept</button>
-                    <button class="reject-btn" data-id="${req.fromId}">Ignore</button>
+                    <button class="accept-btn" data-id="${req.fromId}">Kabul</button>
+                    <button class="reject-btn" data-id="${req.fromId}">Reddet</button>
                 </div>`;
             notifList.appendChild(item);
         });
@@ -564,6 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateNotifBadge();
                         renderNotifPanel();
                         if (currentContext === 'friends') renderSidebar();
+                        showToast(`${res.friend.username} arkadaş listene eklendi!`);
                     }
                 });
             });
@@ -571,22 +681,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         notifList.querySelectorAll('.reject-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const fromId = btn.dataset.id;
-                pendingRequests = pendingRequests.filter(r => r.fromId !== fromId);
+                const name = pendingRequests.find(r => r.fromId === btn.dataset.id)?.fromUsername;
+                pendingRequests = pendingRequests.filter(r => r.fromId !== btn.dataset.id);
                 updateNotifBadge();
                 renderNotifPanel();
+                if (name) showToast(`${name} isteği reddedildi`);
             });
         });
     }
 
-    // Notifications panel toggle
     notifBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         renderNotifPanel();
-        notifPanel.style.display = notifPanel.style.display === 'flex' ? 'none' : 'flex';
+        const visible = notifPanel.style.display === 'flex';
+        notifPanel.style.display = visible ? 'none' : 'flex';
     });
 
-    // --- Modals ---
+    // ============================================================
+    // MODALS
+    // ============================================================
     document.getElementById('nav-add-server').addEventListener('click', () => {
         document.getElementById('new-server-name').value = '';
         createServerModal.style.display = 'flex';
@@ -603,27 +716,40 @@ document.addEventListener('DOMContentLoaded', () => {
         joinServerModal.style.display = 'flex';
     });
 
-    // Invite link button
+    // Davet linki kopyala
     btnInviteServer.addEventListener('click', () => {
         if (!currentServerId) return;
+        // Render'da da çalışacak şekilde tam URL
         const link = `${window.location.origin}?invite=${currentServerId}`;
-        navigator.clipboard.writeText(link).then(() => {
-            btnInviteServer.style.color = 'var(--accent-green)';
-            setTimeout(() => { btnInviteServer.style.color = ''; }, 2000);
-        }).catch(() => {
-            prompt('Copy invite link:', link);
-        });
+
+        const btn = btnInviteServer;
+        btn.classList.add('copy-success');
+        btn.querySelector('i').setAttribute('data-lucide', 'check');
+        initLucide();
+        btn.title = 'Kopyalandı!';
+
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                showToast('✅ Davet linki kopyalandı!', 'success');
+            })
+            .catch(() => {
+                prompt('Davet linkini kopyala:', link);
+            });
+
+        setTimeout(() => {
+            btn.classList.remove('copy-success');
+            btn.querySelector('i').setAttribute('data-lucide', 'share-2');
+            btn.title = 'Davet Linkini Kopyala';
+            initLucide();
+        }, 2500);
     });
 
     document.querySelectorAll('.close-modal').forEach(b => {
-        b.addEventListener('click', () => {
-            b.closest('.modal-overlay').style.display = 'none';
-        });
+        b.addEventListener('click', () => b.closest('.modal-overlay').style.display = 'none');
     });
 
-    // Close modals on overlay click
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
-        overlay.addEventListener('click', (e) => {
+        overlay.addEventListener('click', e => {
             if (e.target === overlay) overlay.style.display = 'none';
         });
     });
@@ -634,13 +760,17 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit('create-server', name, (res) => {
             if (res.success) {
                 servers.push(res.server);
-                renderServerList();
                 createServerModal.style.display = 'none';
-                // Auto-switch to new server
-                currentContext = res.server.id;
-                currentServerId = res.server.id;
-                renderSidebar();
-                switchMainView('server', res.server);
+                renderServerList();
+                activateServer(res.server);
+                // Server ikonunu aktif yap
+                setTimeout(() => {
+                    document.querySelectorAll('.server-icon').forEach((el, i) => {
+                        if (servers[i]?.id === res.server.id) el.classList.add('active');
+                        else el.classList.remove('active');
+                    });
+                }, 50);
+                showToast(`"${res.server.name}" sunucusu oluşturuldu!`);
             }
         });
     });
@@ -650,54 +780,128 @@ document.addEventListener('DOMContentLoaded', () => {
         const msgEl = document.getElementById('add-friend-message');
         if (!name) return;
         socket.emit('send-friend-request', name, (res) => {
+            msgEl.style.color = res.success ? 'var(--accent-green)' : 'var(--accent-red)';
+            msgEl.textContent = res.message;
             if (res.success) {
-                msgEl.style.color = 'var(--accent-green)';
-                msgEl.textContent = res.message;
                 document.getElementById('new-friend-username').value = '';
-            } else {
-                msgEl.style.color = 'var(--accent-red)';
-                msgEl.textContent = res.message;
+                showToast(res.message);
             }
         });
     });
 
     document.getElementById('confirm-join-server').addEventListener('click', () => {
         let val = document.getElementById('join-server-link').value.trim();
-        // Support full URL invite links
-        if (val.includes('?invite=')) {
-            val = val.split('?invite=')[1];
-        }
+        if (val.includes('?invite=')) val = val.split('?invite=')[1].split('&')[0];
         if (!val) return;
         socket.emit('join-server', val, (res) => {
             if (res.success) {
                 servers.push(res.server);
                 renderServerList();
                 joinServerModal.style.display = 'none';
-                currentContext = res.server.id;
-                currentServerId = res.server.id;
-                renderSidebar();
-                switchMainView('server', res.server);
+                activateServer(res.server);
+                showToast(`"${res.server.name}" sunucusuna katıldın!`);
             } else {
-                alert(res.message || 'Could not join server.');
+                showToast(res.message, 'error');
             }
         });
     });
 
-    // Settings placeholder
-    document.getElementById('open-settings-btn').addEventListener('click', () => {
-        alert('Settings coming soon!');
-    });
+    // ============================================================
+    // SETTINGS MODAL
+    // ============================================================
+    document.getElementById('open-settings-btn').addEventListener('click', openSettings);
+    document.getElementById('my-avatar').addEventListener('click', openSettings);
 
-    // Avatar click -> settings
-    document.getElementById('my-avatar').addEventListener('click', () => {
-        alert(`Logged in as: ${currentUser?.username}`);
-    });
+    function openSettings() {
+        if (!currentUser) return;
+        // Kullanıcı bilgilerini doldur
+        document.getElementById('settings-username').textContent = currentUser.username;
+        document.getElementById('settings-avatar').src = currentUser.profilePic;
 
-    // Check invite URL param on load
-    const urlParams = new URLSearchParams(window.location.search);
-    const inviteId = urlParams.get('invite');
-    if (inviteId) {
-        // Will be used after login
-        window._pendingInvite = inviteId;
+        // Mikrofon cihazlarını doldur
+        const micSelect = document.getElementById('settings-mic-select');
+        micSelect.innerHTML = '';
+        if (audioDevices.length === 0) {
+            micSelect.innerHTML = '<option>Cihaz bulunamadı</option>';
+        } else {
+            audioDevices.forEach((d, i) => {
+                const opt = document.createElement('option');
+                opt.value = d.deviceId;
+                opt.textContent = d.label || `Mikrofon ${i + 1}`;
+                if (selectedMicId === d.deviceId) opt.selected = true;
+                micSelect.appendChild(opt);
+            });
+        }
+
+        // Ses seviyesi
+        const volSlider = document.getElementById('settings-volume');
+        volSlider.value = isDeafened ? 0 : 100;
+
+        settingsModal.style.display = 'flex';
+        initLucide();
     }
+
+    // Mikrofon değiştir
+    document.getElementById('settings-mic-select').addEventListener('change', async (e) => {
+        selectedMicId = e.target.value;
+        try {
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                audio: { deviceId: { exact: selectedMicId } }
+            });
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+            localStream = newStream;
+            // Peer'lara yeni stream gönder
+            updateStreams(localStream);
+            showToast('Mikrofon değiştirildi');
+        } catch (err) {
+            showToast('Mikrofon değiştirilirken hata oluştu', 'error');
+        }
+    });
+
+    // Ses seviyesi
+    document.getElementById('settings-volume').addEventListener('input', (e) => {
+        const vol = e.target.value / 100;
+        document.querySelectorAll('.voice-card audio').forEach(a => {
+            const card = a.closest('.voice-card');
+            if (card && card.getAttribute('data-peer-id') !== myPeer?.id) {
+                a.volume = vol;
+            }
+        });
+        document.getElementById('settings-volume-label').textContent = e.target.value + '%';
+    });
+
+    // Tema toggle
+    document.getElementById('settings-theme-toggle').addEventListener('click', () => {
+        document.body.classList.toggle('theme-light');
+        const isLight = document.body.classList.contains('theme-light');
+        document.getElementById('settings-theme-toggle').textContent = isLight ? '🌙 Koyu Mod' : '☀️ Açık Mod';
+        showToast(isLight ? 'Açık mod aktif' : 'Koyu mod aktif');
+    });
+
+    // Çıkış yap
+    document.getElementById('settings-logout-btn').addEventListener('click', () => {
+        if (!confirm('Çıkış yapmak istediğinizden emin misiniz?')) return;
+        leaveVoice(true);
+        settingsModal.style.display = 'none';
+        currentUser = null;
+        friends = [];
+        servers = [];
+        pendingRequests = [];
+        currentContext = 'friends';
+        currentChannelId = null;
+        currentServerId = null;
+        appContainer.style.display = 'none';
+        authOverlay.style.display = 'flex';
+        authUsernameInput.value = '';
+        authPasswordInput.value = '';
+        authError.textContent = '';
+        // Socket yeniden bağlan
+        socket.disconnect();
+        socket.connect();
+    });
+
+    // URL davet parametresi
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteId  = urlParams.get('invite');
+    if (inviteId) window._pendingInvite = inviteId;
 });
