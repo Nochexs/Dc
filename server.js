@@ -78,6 +78,9 @@ io.on('connection', (socket) => {
                 const fs = findSocket(fId);
                 if (fs) io.to(fs).emit('friend-online', { userId: user.id });
             });
+            user.servers.forEach(sId => {
+                socket.to(sId).emit('server-member-status', { userId: user.id, status: 'online' });
+            });
         }
 
         // Hangi arkadaşlar çevrimiçi?
@@ -122,6 +125,10 @@ io.on('connection', (socket) => {
                 } else {
                     io.to(fs).emit('friend-status', { userId: uid, status });
                 }
+            });
+            user.servers.forEach(sId => {
+                const targetStatus = status === 'invisible' ? 'offline' : status;
+                socket.to(sId).emit('server-member-status', { userId: user.id, status: targetStatus });
             });
         }
 
@@ -285,6 +292,7 @@ io.on('connection', (socket) => {
             limit: limit ? parseInt(limit, 10) : 0
         };
         srv.channels.push(newChannel);
+        socket.to(serverId).emit('channel-created', { serverId, channel: newChannel });
         cb({ success: true, channel: newChannel, server: srv });
     });
 
@@ -413,6 +421,9 @@ io.on('connection', (socket) => {
                 user.friends.forEach(fId => {
                     const fs = findSocket(fId);
                     if (fs && fs !== socket.id) io.to(fs).emit('friend-offline', { userId: uid });
+                });
+                user.servers.forEach(sId => {
+                    socket.to(sId).emit('server-member-status', { userId: uid, status: 'offline' });
                 });
             }
         }

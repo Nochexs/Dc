@@ -364,16 +364,19 @@ document.addEventListener('DOMContentLoaded', () => {
         friendProfileView.style.display = 'none';
         document.getElementById('center-chat-area').style.display = 'flex';
         
-        if (rsPanel) rsPanel.style.display = 'flex';
         if (rightPanelTitle) rightPanelTitle.textContent = s.name + ' Sohbeti';
-        
         welcomeMessage.style.display = 'flex';
         mainHeaderTitle.textContent = s ? s.name : 'Nexus';
         mainHeaderIcon.setAttribute('data-lucide', 'server');
         toggleMembersBtn.style.display = '';
         renderSidebar();
-        
-        if (membersOpen) openMembersPanel(s.id);
+
+        if (membersOpen) {
+            openMembersPanel(s.id);
+            if (rsPanel) rsPanel.style.display = 'none';
+        } else {
+            if (rsPanel) rsPanel.style.display = 'flex';
+        }
         
         // Sunucunun ilk text kanalını "Global Chat" yap
         const globalText = s.channels.find(c => c.type === 'text');
@@ -402,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dynamicChannelList.innerHTML = '';
         if (currentContext === 'friends') {
             sidebarCtxTitle.textContent = 'ARKADAŞLAR';
-            btnAddFriend.style.display = ''; btnInviteServer.style.display = 'none';
+            btnAddFriend.style.display = '';
             if (!friends.length) {
                 const li = document.createElement('li');
                 li.style.cssText = 'color:var(--text-secondary);font-size:12px;padding:20px 14px;opacity:.6;pointer-events:none;';
@@ -435,22 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!server) return;
             sidebarCtxTitle.textContent = server.name.toUpperCase();
             btnAddFriend.style.display = 'none'; 
-            btnInviteServer.style.display = '';
-            
-            // Eğer ayarlar butonu yoksa yanına ekleyelim:
-            let btnSettings = document.getElementById('btn-server-settings');
-            if (!btnSettings) {
-                btnSettings = document.createElement('button');
-                btnSettings.id = 'btn-server-settings';
-                btnSettings.className = 'icon-btn-small';
-                btnSettings.innerHTML = '<i data-lucide="settings"></i>';
-                btnSettings.setAttribute('data-tooltip', 'Sunucu Ayarları');
-                btnSettings.style.marginLeft = '4px';
-                btnInviteServer.parentNode.insertBefore(btnSettings, btnInviteServer.nextSibling);
-                btnSettings.addEventListener('click', () => openServerSettings(server));
-            }
-            btnSettings.style.display = '';
-
             const voiceChs = server.channels.filter(c => c.type === 'voice');
 
             // Ses Kanalları Header + Ekleme Butonu
@@ -463,8 +450,9 @@ document.addEventListener('DOMContentLoaded', () => {
             dynamicChannelList.appendChild(hdr);
             
             hdr.querySelector('#add-voice-ch-btn').addEventListener('click', () => {
-                showToast("Ses kanalı oluşturma yakında", "info");
-                // TODO: Ses modalı açılacak
+                document.getElementById('create-voice-modal').style.display = 'flex';
+                document.getElementById('new-voice-name').value = '';
+                document.getElementById('new-voice-limit').value = '';
             });
 
             voiceChs.forEach(ch => {
@@ -865,22 +853,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggleMembersBtn.addEventListener('click', () => {
         membersOpen = !membersOpen;
-        const chatArea = document.getElementById('center-chat-area');
+        const rsPanel = document.getElementById('right-side-panel');
         if (membersOpen) {
             membersPanel.style.display = 'flex';
             if (currentServerId) openMembersPanel(currentServerId);
-            // Sohbeti gizle
-            if (chatArea) chatArea.style.display = 'none';
+            if (rsPanel && currentServerId) rsPanel.style.display = 'none';
         } else {
             membersPanel.style.display = 'none';
-            // Sohbeti göster
-            if (chatArea && currentServerId) chatArea.style.display = 'flex';
+            if (rsPanel && currentServerId) rsPanel.style.display = 'flex';
         }
         toggleMembersBtn.classList.toggle('active', membersOpen);
     });
 
     socket.on('server-member-joined', d => {
         if (d.serverId === currentServerId) refreshMembersPanel();
+    });
+
+    socket.on('server-member-status', d => {
+        // Sunucudaki birinin çevrimiçi durumu değiştiyse paneli tazele
+        refreshMembersPanel();
+    });
+
+    socket.on('channel-created', d => {
+        const s = servers.find(svr => svr.id === d.serverId);
+        if (s) {
+            s.channels.push(d.channel);
+            if (currentServerId === d.serverId) renderSidebar();
+        }
     });
 
     // ── BİLDİRİM PANELİ ──────────────────────────────────────────────
@@ -1370,6 +1369,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         serverSettingsModal.style.display = 'flex';
     };
+
+    document.getElementById('btn-server-settings')?.addEventListener('click', () => {
+        const s = servers.find(svr => svr.id === currentServerId);
+        if (s) openServerSettings(s);
+    });
+
+    document.getElementById('btn-invite-server')?.addEventListener('click', () => {
+        if (!currentServerId) return;
+        const link = `${window.location.origin}/?invite=${currentServerId}`;
+        navigator.clipboard.writeText(link).then(() => showToast('Davet linki kopyalandı!'));
+    });
 
     document.getElementById('btn-save-server-settings')?.addEventListener('click', () => {
         if (!activeSettingsServerId) return;
