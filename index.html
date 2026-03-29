@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus | Premium Voice & Chat</title>
+    <title>Nexus | Premium Voice &amp; Chat</title>
+    <meta name="description" content="Nexus - The next dimension of voice and text communication.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="background-mesh"></div>
 
-    <!-- Auth Overlay (Glassmorphism) -->
+    <!-- Auth Overlay -->
     <div class="auth-overlay" id="auth-overlay">
         <div class="auth-box glass-panel shadow-glow">
             <div class="auth-logo">
@@ -22,22 +22,22 @@
             </div>
             <h2>Welcome to Nexus</h2>
             <p class="auth-sub">Enter the next dimension of communication.</p>
-            
+
             <div class="auth-avatar-selection">
                 <div class="avatar-preview shadow-glow" id="auth-avatar-preview">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nexus" alt="Preview">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nexus" alt="Preview avatar">
                 </div>
                 <button class="icon-btn-lite" id="refresh-avatar-btn" title="Randomize Avatar">
-                    <i data-lucide="refresh-cw"></i>
+                    <i data-lucide="refresh-cw"></i> Randomize
                 </button>
             </div>
 
             <div class="form-group">
-                <label>USERNAME</label>
-                <input type="text" id="auth-username" placeholder="Avatar name" autocomplete="off" class="glass-input">
+                <label for="auth-username">USERNAME</label>
+                <input type="text" id="auth-username" placeholder="Enter username" autocomplete="off" class="glass-input">
             </div>
             <div class="form-group">
-                <label>PASSWORD</label>
+                <label for="auth-password">PASSWORD</label>
                 <input type="password" id="auth-password" placeholder="••••••••" autocomplete="off" class="glass-input">
             </div>
             <p id="auth-error" class="error-msg"></p>
@@ -48,44 +48,47 @@
         </div>
     </div>
 
-    <!-- Main App Container -->
+    <!-- Main App -->
     <div class="app-container" id="app-container" style="display:none;">
         <main class="glass-frame">
-            
+
             <!-- 1. Server Rail -->
             <nav class="server-rail">
-                <div class="logo-area" id="nav-logo">
+                <div class="logo-area" id="nav-logo" title="Nexus">
                     <i data-lucide="zap" class="logo-icon"></i>
                 </div>
                 <div class="rail-divider"></div>
-                
-                <!-- Fixed Friends Button -->
+
+                <!-- Friends Button -->
                 <button class="rail-action-btn tooltip active" id="nav-friends" data-tooltip="Friends">
                     <i data-lucide="users"></i>
                 </button>
                 <div class="rail-divider"></div>
 
-                <div class="server-list" id="dynamic-server-list">
-                    <!-- Dynamic Servers -->
-                </div>
+                <!-- Dynamic Server Icons -->
+                <div class="server-list" id="dynamic-server-list"></div>
                 <div class="rail-divider"></div>
-                <button class="rail-action-btn tooltip" id="nav-add-server" data-tooltip="Add Server">
+
+                <!-- Add / Join Server -->
+                <button class="rail-action-btn tooltip" id="nav-add-server" data-tooltip="Create Server">
                     <i data-lucide="plus"></i>
                 </button>
                 <button class="rail-action-btn tooltip" id="nav-join-server" data-tooltip="Join via Invite">
-                    <i data-lucide="link"></i>
+                    <i data-lucide="link-2"></i>
                 </button>
+
                 <div class="rail-spacer"></div>
 
-                <!-- Notifications Button -->
-                <button class="rail-action-btn tooltip" id="nav-notifications" data-tooltip="Notifications">
+                <!-- Notifications -->
+                <button class="rail-action-btn tooltip" id="nav-notifications" data-tooltip="Notifications" style="position:relative;">
                     <i data-lucide="bell"></i>
                     <div class="notification-badge" id="notif-badge" style="display:none;"></div>
                 </button>
 
+                <!-- User Avatar -->
                 <div class="user-profile-trigger">
-                    <div class="avatar-small shadow-glow" id="my-avatar">
-                        <img src="" alt="User">
+                    <div class="avatar-small shadow-glow" id="my-avatar" title="Your profile">
+                        <img src="" alt="User avatar">
                         <div class="status-dot"></div>
                     </div>
                 </div>
@@ -96,17 +99,17 @@
                 <header class="sidebar-header">
                     <h2 id="sidebar-context-title">FRIENDS</h2>
                     <div class="header-actions">
-                        <button id="btn-invite-server" class="icon-btn-lite tooltip" data-tooltip="Invite Link" style="display:none;">
-                            <i data-lucide="user-plus"></i>
+                        <!-- Invite link (server context) -->
+                        <button id="btn-invite-server" class="icon-btn-lite tooltip" data-tooltip="Copy Invite Link" style="display:none;">
+                            <i data-lucide="share-2"></i>
                         </button>
+                        <!-- Add friend (friends context) -->
                         <button id="btn-add-friend" class="icon-btn-lite tooltip" data-tooltip="Add Friend">
                             <i data-lucide="user-plus"></i>
                         </button>
                     </div>
                 </header>
-                <ul class="channel-list" id="dynamic-channel-list">
-                    <!-- Dynamic Channels -->
-                </ul>
+                <ul class="channel-list" id="dynamic-channel-list"></ul>
                 <div class="sidebar-footer">
                     <button class="settings-trigger" id="open-settings-btn">
                         <i data-lucide="settings"></i> <span>Settings</span>
@@ -114,7 +117,7 @@
                 </div>
             </aside>
 
-            <!-- 3. Main Center Area -->
+            <!-- 3. Main Center -->
             <section class="main-content">
                 <header class="content-header">
                     <div class="header-info">
@@ -125,44 +128,51 @@
 
                 <div class="view-container">
                     <!-- Voice Room Grid -->
-                    <div id="voice-grid" class="voice-grid" style="display:none;">
-                        <!-- User Cards -->
-                    </div>
+                    <div id="voice-grid" class="voice-grid" style="display:none;"></div>
 
-                    <!-- Welcome / Null State -->
+                    <!-- Welcome State -->
                     <div id="welcome-message" class="welcome-state">
                         <div class="hero-icon"><i data-lucide="message-square"></i></div>
                         <h2>Begin the Conversation</h2>
-                        <p>Select a server or friend to start connecting.</p>
+                        <p>Select a friend or a server channel to start connecting.</p>
                     </div>
                 </div>
 
                 <!-- Floating Voice Controls -->
                 <div class="voice-controls-panel shadow-glow" id="voice-controls" style="display:none;">
                     <div class="voice-meta">
+                        <i data-lucide="mic" style="width:14px;height:14px;color:var(--accent-green);"></i>
                         <span id="active-voice-channel">Voice Channel</span>
                     </div>
                     <div class="control-group">
-                        <button class="control-btn" id="mic-btn" title="Toggle Mic"><i data-lucide="mic"></i></button>
-                        <button class="control-btn" id="deafen-btn" title="Deafen"><i data-lucide="headphones"></i></button>
-                        <button class="control-btn accent" id="screen-share-btn" title="Share Screen"><i data-lucide="monitor"></i></button>
-                        <button class="control-btn leave-btn" id="disconnect-btn" title="Disconnect"><i data-lucide="log-out"></i></button>
+                        <button class="control-btn" id="mic-btn" title="Toggle Mic">
+                            <i data-lucide="mic"></i>
+                        </button>
+                        <button class="control-btn" id="deafen-btn" title="Toggle Deafen">
+                            <i data-lucide="headphones"></i>
+                        </button>
+                        <button class="control-btn accent" id="screen-share-btn" title="Share Screen">
+                            <i data-lucide="monitor"></i>
+                        </button>
+                        <button class="control-btn leave-btn" id="disconnect-btn" title="Disconnect">
+                            <i data-lucide="log-out"></i>
+                        </button>
                     </div>
                 </div>
             </section>
 
-            <!-- 4. Persistent Chat Panel -->
+            <!-- 4. Chat Panel -->
             <aside id="chat-panel" class="chat-panel">
                 <header class="chat-header">
-                    <h3 id="chat-panel-title">Channel Chat</h3>
+                    <h3 id="chat-panel-title">Chat</h3>
                 </header>
-                <div class="chat-messages" id="chat-messages">
-                    <!-- Messages -->
-                </div>
+                <div class="chat-messages" id="chat-messages"></div>
                 <div class="chat-input-area">
                     <div class="input-wrapper shadow-glow">
-                        <input type="text" id="chat-input" placeholder="Message..." disabled>
-                        <button class="send-btn" id="send-msg-btn"><i data-lucide="send"></i></button>
+                        <input type="text" id="chat-input" placeholder="Select a channel first..." disabled>
+                        <button class="send-btn" id="send-msg-btn" title="Send Message">
+                            <i data-lucide="send"></i>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -170,11 +180,12 @@
         </main>
     </div>
 
-    <!-- Modals -->
+    <!-- Modal: Create Server -->
     <div class="modal-overlay" id="create-server-modal" style="display:none;">
         <div class="modal-box glass-panel shadow-glow">
             <h2>Create Server</h2>
-            <input type="text" id="new-server-name" placeholder="Server Name" class="glass-input">
+            <p class="modal-sub">Give your server a name. You can customize it further later.</p>
+            <input type="text" id="new-server-name" placeholder="My Awesome Server" class="glass-input">
             <div class="modal-actions">
                 <button class="close-modal secondary-btn">Cancel</button>
                 <button class="primary-btn" id="confirm-create-server">Create</button>
@@ -182,13 +193,14 @@
         </div>
     </div>
 
+    <!-- Modal: Add Friend -->
     <div class="modal-overlay" id="add-friend-modal" style="display:none;">
         <div class="modal-box glass-panel shadow-glow">
-            <h2>Find Friends</h2>
-            <p class="modal-sub">Enter the username of the person you want to connect with.</p>
+            <h2>Add Friend</h2>
+            <p class="modal-sub">Enter the exact username of the person you want to add.</p>
             <div class="friend-input-container">
-                <input type="text" id="new-friend-username" placeholder="Search by username..." class="glass-input">
-                <button class="primary-btn" id="confirm-add-friend">Send Request</button>
+                <input type="text" id="new-friend-username" placeholder="username" class="glass-input">
+                <button class="primary-btn" id="confirm-add-friend">Send</button>
             </div>
             <p id="add-friend-message" class="status-msg"></p>
             <div class="modal-actions">
@@ -197,10 +209,12 @@
         </div>
     </div>
 
+    <!-- Modal: Join Server -->
     <div class="modal-overlay" id="join-server-modal" style="display:none;">
         <div class="modal-box glass-panel shadow-glow">
             <h2>Join Server</h2>
-            <input type="text" id="join-server-link" placeholder="Enter Invite ID" class="glass-input">
+            <p class="modal-sub">Paste an invite link or enter a Server ID.</p>
+            <input type="text" id="join-server-link" placeholder="Invite link or Server ID" class="glass-input">
             <div class="modal-actions">
                 <button class="close-modal secondary-btn">Cancel</button>
                 <button class="primary-btn" id="confirm-join-server">Join</button>
@@ -208,7 +222,7 @@
         </div>
     </div>
 
-    <!-- Notifications Panel (Overlay but scoped) -->
+    <!-- Notifications Panel -->
     <div class="modal-overlay" id="notif-panel" style="display:none;">
         <div class="modal-box glass-panel shadow-glow notif-box">
             <header class="notif-header">
@@ -216,13 +230,12 @@
                 <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
             </header>
             <div class="notif-list" id="notif-list">
-                <!-- Notifications here -->
                 <div class="no-notif">No new notifications</div>
             </div>
         </div>
     </div>
 
-    <!-- Voice card template -->
+    <!-- Voice Card Template -->
     <template id="user-card-template">
         <div class="voice-card" data-peer-id="">
             <div class="avatar-ring speaker-active">
@@ -234,7 +247,7 @@
             </div>
             <span class="user-label">User</span>
             <div class="card-indicators">
-                <i class="fa-solid fa-microphone-slash mic-muted-icon" style="display:none;"></i>
+                <i class="mic-muted-icon" data-lucide="mic-off" style="display:none;width:14px;height:14px;"></i>
             </div>
         </div>
     </template>
@@ -243,7 +256,6 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
     <script>
-        // Init Lucide
         lucide.createIcons();
     </script>
 </body>
