@@ -248,6 +248,53 @@
     </div>
 </div>
 
+<!-- ═══ YENİ MODAL: Sunucu Ayarları ═══ -->
+<div class="modal-overlay" id="server-settings-modal" style="display:none;">
+    <div class="modal-box glass-panel" style="max-width:400px;">
+        <div class="modal-icon"><i data-lucide="settings"></i></div>
+        <h2 id="settings-server-name-display">Sunucu Ayarları</h2>
+        
+        <div style="margin: 20px 0; text-align: left;">
+            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Sunucu Adı</label>
+            <input type="text" id="edit-server-name" class="glass-input" style="width:100%; margin-bottom:15px;">
+            
+            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Sunucu Resmi (URL)</label>
+            <input type="text" id="edit-server-avatar" class="glass-input" placeholder="Boş bırakırsanız varsayılan atanır..." style="width:100%;">
+        </div>
+        
+        <div class="modal-actions" style="margin-top: 25px; display:flex; gap:10px;">
+            <button class="secondary-btn danger" id="btn-leave-server" style="flex:1;">Ayrıl</button>
+            <button class="primary-btn danger" id="btn-delete-server" style="flex:1; background:rgba(239,68,68,0.2) !important; color:var(--text-danger) !important; display:none;">Sil</button>
+            <button class="primary-btn" id="btn-save-server-settings" style="flex:2;">Kaydet</button>
+            <button class="close-modal secondary-btn" style="flex:1;">İptal</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ YENİ MODAL: Ses Kanalı Oluştur ═══ -->
+<div class="modal-overlay" id="create-voice-modal" style="display:none;">
+    <div class="modal-box glass-panel">
+        <div class="modal-icon"><i data-lucide="plus"></i></div>
+        <h2>Ses Kanalı Oluştur</h2>
+        
+        <div style="margin: 20px 0; text-align: left;">
+            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kanal Adı</label>
+            <input type="text" id="new-voice-name" placeholder="yeni-kanal" class="glass-input" style="width:100%; margin-bottom:15px;">
+            
+            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kişi Limiti (İsteğe Bağlı)</label>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input type="number" id="new-voice-limit" placeholder="Limit Yok" class="glass-input" min="2" max="99" style="width:100px;">
+                <span style="font-size:12px; color:var(--text-secondary);">kullanıcı (0 veya boş limit yok demektir)</span>
+            </div>
+        </div>
+        
+        <div class="modal-actions" style="margin-top: 25px;">
+            <button class="close-modal secondary-btn">İptal</button>
+            <button class="primary-btn" id="confirm-create-voice">Oluştur</button>
+        </div>
+    </div>
+</div>
+
 <!-- ═══ PANEL: Bildirimler ═══ -->
 <div class="modal-overlay" id="notif-panel" style="display:none;">
     <div class="modal-box glass-panel notif-box">
@@ -285,9 +332,6 @@
                 <button class="status-option" data-status="online">
                     <span class="status-opt-dot" style="background:var(--accent-green);"></span> Çevrimiçi
                 </button>
-                <button class="status-option" data-status="dnd">
-                    <span class="status-opt-dot" style="background:var(--accent-red);"></span> Rahatsız Etmeyin
-                </button>
                 <button class="status-option" data-status="invisible">
                     <span class="status-opt-dot" style="background:#607d8b;"></span> Görünmez
                 </button>
@@ -315,8 +359,17 @@
         <p id="pp-msg" class="status-msg" style="text-align:center;margin:0 24px;"></p>
 
         <div class="pp-section" style="padding-top:0;">
-            <button id="pp-logout-btn" class="logout-btn">
+            <p style="font-size:12px; margin-bottom:5px; color:var(--text-secondary);">PROFiL RESMİ (URL)</p>
+            <div class="pp-row" style="margin-bottom:15px;">
+                <input type="text" id="pp-avatar-url" placeholder="https://..." class="glass-input">
+                <button class="primary-btn" id="pp-save-avatar">Kullan</button>
+            </div>
+            
+            <button id="pp-logout-btn" class="logout-btn" style="margin-bottom:10px;">
                 <i data-lucide="log-out"></i> Çıkış Yap
+            </button>
+            <button id="pp-delete-account-btn" class="logout-btn" style="background:rgba(239,68,68,0.1); color:var(--text-danger); border:1px solid rgba(239,68,68,0.2);">
+                <i data-lucide="trash-2"></i> Hesabımı Sil
             </button>
         </div>
     </div>

@@ -314,9 +314,15 @@ document.addEventListener('DOMContentLoaded', () => {
         currentChannelId = null; currentServerId = null; currentChannelType = null; currentDmFriend = null;
         chatInput.disabled = true; chatInput.placeholder = 'Bir kanal seç...';
         chatMessages.innerHTML = '';
-        chatPanelTitle.textContent = 'Sohbet';
+        if (rightPanelTitle) rightPanelTitle.textContent = 'Profil';
+        
         voiceGrid.style.display = 'none'; voiceControls.style.display = 'none';
         welcomeMessage.style.display = 'flex'; friendProfileView.style.display = 'none';
+        document.getElementById('center-chat-area').style.display = 'none';
+        
+        const rsPanel = document.getElementById('right-side-panel');
+        if (rsPanel) rsPanel.style.display = 'none';
+        
         membersPanel.style.display = 'none';
         document.querySelectorAll('.server-icon, .rail-btn').forEach(el => el.classList.remove('active'));
         navFriends.classList.add('active');
@@ -347,18 +353,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function activateServer(s) {
         currentContext = s.id; currentServerId = s.id;
-        currentChannelId = null; currentChannelType = null;
+        currentChannelType = null;
+        
+        // Taşıma mantığı: Chat'i sağ panele taşı
+        const chatArea = document.getElementById('center-chat-area');
+        const rsPanel = document.getElementById('right-side-panel');
+        rsPanel.appendChild(chatArea);
+        
         chatMessages.innerHTML = ''; chatInput.disabled = true;
         friendProfileView.style.display = 'none';
-        document.getElementById('center-chat-area').style.display = 'none';
-        const rsPanel = document.getElementById('right-side-panel');
-        if (rsPanel) rsPanel.style.display = 'none';
+        document.getElementById('center-chat-area').style.display = 'flex';
+        
+        if (rsPanel) rsPanel.style.display = 'flex';
+        if (rightPanelTitle) rightPanelTitle.textContent = s.name + ' Sohbeti';
+        
         welcomeMessage.style.display = 'flex';
         mainHeaderTitle.textContent = s ? s.name : 'Nexus';
         mainHeaderIcon.setAttribute('data-lucide', 'server');
         toggleMembersBtn.style.display = '';
         renderSidebar();
+        
         if (membersOpen) openMembersPanel(s.id);
+        
+        // Sunucunun ilk text kanalını "Global Chat" yap
+        const globalText = s.channels.find(c => c.type === 'text');
+        if (globalText) {
+            currentChannelId = globalText.id;
+            chatInput.disabled = false;
+            chatInput.placeholder = `Sunucuya mesaj gönder...`;
+            socket.emit('get-channel-messages', globalText.id, res => {
+                if (res.success && res.messages.length) {
+                    res.messages.forEach(m => appendMsg(m.sender, m.text, m.senderId===currentUser.id, m.profilePic, m.timestamp));
+                } else {
+                    chatMessages.innerHTML = `<div class="welcome-notif" style="text-align:center; padding-top:20px;">
+                        <i data-lucide="server" style="width:40px;height:40px;color:var(--accent-purple);margin-bottom:12px;"></i>
+                        <h3>${esc(s.name)}</h3><p>Genel sohbete hoş geldin!</p>
+                    </div>`;
+                    initLucide();
+                }
+            });
+        }
+        
         initLucide();
     }
 
@@ -399,27 +434,47 @@ document.addEventListener('DOMContentLoaded', () => {
             const server = servers.find(s => s.id === currentContext);
             if (!server) return;
             sidebarCtxTitle.textContent = server.name.toUpperCase();
-            btnAddFriend.style.display = 'none'; btnInviteServer.style.display = '';
+            btnAddFriend.style.display = 'none'; 
+            btnInviteServer.style.display = '';
+            
+            // Eğer ayarlar butonu yoksa yanına ekleyelim:
+            let btnSettings = document.getElementById('btn-server-settings');
+            if (!btnSettings) {
+                btnSettings = document.createElement('button');
+                btnSettings.id = 'btn-server-settings';
+                btnSettings.className = 'icon-btn-small';
+                btnSettings.innerHTML = '<i data-lucide="settings"></i>';
+                btnSettings.setAttribute('data-tooltip', 'Sunucu Ayarları');
+                btnSettings.style.marginLeft = '4px';
+                btnInviteServer.parentNode.insertBefore(btnSettings, btnInviteServer.nextSibling);
+                btnSettings.addEventListener('click', () => openServerSettings(server));
+            }
+            btnSettings.style.display = '';
 
-            const textChs  = server.channels.filter(c => c.type === 'text');
             const voiceChs = server.channels.filter(c => c.type === 'voice');
 
-            function sec(label, channels, icon) {
-                if (!channels.length) return;
-                const hdr = document.createElement('li');
-                hdr.className = 'ch-section-header'; hdr.textContent = label;
-                dynamicChannelList.appendChild(hdr);
-                channels.forEach(ch => {
-                    const li = document.createElement('li');
-                    li.className = `ch-item ${currentChannelId===ch.id?'active':''} ${currentChannelId===ch.id&&ch.type==='voice'?'voice-active':''}`;
-                    li.dataset.type = ch.type;
-                    li.innerHTML = `<i data-lucide="${icon}"></i><span>${esc(ch.name)}</span>`;
-                    li.addEventListener('click', () => joinChannel(server.id, ch));
-                    dynamicChannelList.appendChild(li);
-                });
-            }
-            sec('METİN KANALLARI', textChs, 'hash');
-            sec('SES KANALLARI',   voiceChs, 'volume-2');
+            // Ses Kanalları Header + Ekleme Butonu
+            const hdr = document.createElement('li');
+            hdr.className = 'ch-section-header'; 
+            hdr.style.display = 'flex';
+            hdr.style.justifyContent = 'space-between';
+            hdr.style.alignItems = 'center';
+            hdr.innerHTML = `<span>SES KANALLARI</span> <button id="add-voice-ch-btn" class="icon-btn-small" style="background:transparent; padding:2px;"><i data-lucide="plus" style="width:14px;height:14px;"></i></button>`;
+            dynamicChannelList.appendChild(hdr);
+            
+            hdr.querySelector('#add-voice-ch-btn').addEventListener('click', () => {
+                showToast("Ses kanalı oluşturma yakında", "info");
+                // TODO: Ses modalı açılacak
+            });
+
+            voiceChs.forEach(ch => {
+                const li = document.createElement('li');
+                li.className = `ch-item ${currentChannelId===ch.id?'active':''} ${currentChannelId===ch.id&&ch.type==='voice'?'voice-active':''}`;
+                li.dataset.type = ch.type;
+                li.innerHTML = `<i data-lucide="volume-2"></i><span style="flex:1;">${esc(ch.name)}</span> ${ch.limit ? `<span style="font-size:10px; color:var(--text-secondary);">` + (ch.users ? ch.users.length : 0) + `/` + ch.limit + `</span>` : ''}`;
+                li.addEventListener('click', () => joinChannel(server.id, ch));
+                dynamicChannelList.appendChild(li);
+            });
         }
         initLucide();
     }
@@ -431,6 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isOn = onlineFriends.has(friend.id);
         
+        // Taşıma mantığı: DMs'de Chat merkeze!
+        const chatArea = document.getElementById('center-chat-area');
+        document.querySelector('.view-container').appendChild(chatArea);
+
         // Modal / Panelleri düzenle
         welcomeMessage.style.display = 'none';
         voiceGrid.style.display = 'none';
@@ -641,12 +700,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentChannelId = channel.id; currentServerId = serverId; currentChannelType = 'voice';
         currentDmFriend  = null;
         renderSidebar();
-        friendProfileView.style.display = 'none';
-        const rsPanel = document.getElementById('right-side-panel');
-        if (rsPanel) rsPanel.style.display = 'none';
         
         welcomeMessage.style.display  = 'none';
-        document.getElementById('center-chat-area').style.display = 'none';
         voiceGrid.style.display       = 'grid';
         voiceGrid.innerHTML           = '';
         voiceControls.style.display   = 'flex';
@@ -732,11 +787,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function sendMessage() {
         const val = chatInput.value.trim();
-        if (!val || !currentChannelId) return;
+        if (!val) return;
         if (currentChannelType === 'dm') {
+            if (!currentDmFriend) return;
             socket.emit('send-dm', { friendId: currentDmFriend.id, text: val });
         } else {
-            socket.emit('send-chat-message', { channelId: currentChannelId, serverId: currentServerId, text: val });
+            const s = servers.find(svr => svr.id === currentServerId);
+            if (!s) return;
+            const textCh = s.channels.find(c => c.type === 'text');
+            if (!textCh) return;
+            socket.emit('send-chat-message', { channelId: textCh.id, serverId: currentServerId, text: val });
         }
         appendMsg(currentUser.username, val, true, currentUser.profilePic, new Date().toISOString());
         chatInput.value = '';
@@ -746,8 +806,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sendMsgBtn.addEventListener('click', sendMessage);
 
     socket.on('chat-message', d => {
-        if (d.channelId === currentChannelId)
+        if (d.serverId === currentServerId && d.serverId != null) {
             appendMsg(d.sender, d.text, false, d.profilePic, d.timestamp);
+        }
     });
     socket.on('dm-message', d => {
         clearDmNotif(d.friendId); // Eğer o arkadaşın DM'indeyse temizle
@@ -804,11 +865,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggleMembersBtn.addEventListener('click', () => {
         membersOpen = !membersOpen;
+        const chatArea = document.getElementById('center-chat-area');
         if (membersOpen) {
             membersPanel.style.display = 'flex';
             if (currentServerId) openMembersPanel(currentServerId);
+            // Sohbeti gizle
+            if (chatArea) chatArea.style.display = 'none';
         } else {
             membersPanel.style.display = 'none';
+            // Sohbeti göster
+            if (chatArea && currentServerId) chatArea.style.display = 'flex';
         }
         toggleMembersBtn.classList.toggle('active', membersOpen);
     });
@@ -1090,7 +1156,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('as-mic-test-level').style.width = '0%';
     }
 
-    function openAppSettings() {
+    async function openAppSettings() {
+        await loadAudioDevices();
         const micSel = document.getElementById('as-mic-select');
         const spkSel = document.getElementById('as-spk-select');
         micSel.innerHTML = spkSel.innerHTML = '';
@@ -1275,6 +1342,121 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     disconnectBtn.addEventListener('click', () => leaveVoice(true));
+
+    // ── YENİ MODALLAR VE MANTIK ─────────────────────────────────────────
+    const serverSettingsModal = document.getElementById('server-settings-modal');
+    const createVoiceModal = document.getElementById('create-voice-modal');
+    
+    // Server Ayarları Değişkeni
+    let activeSettingsServerId = null;
+
+    window.openServerSettings = function(server) {
+        if (server.ownerId !== currentUser.id) {
+            document.getElementById('edit-server-name').disabled = true;
+            document.getElementById('edit-server-avatar').disabled = true;
+            document.getElementById('btn-save-server-settings').style.display = 'none';
+            document.getElementById('btn-delete-server').style.display = 'none';
+        } else {
+            document.getElementById('edit-server-name').disabled = false;
+            document.getElementById('edit-server-avatar').disabled = false;
+            document.getElementById('btn-save-server-settings').style.display = '';
+            document.getElementById('btn-delete-server').style.display = '';
+        }
+        
+        activeSettingsServerId = server.id;
+        document.getElementById('settings-server-name-display').textContent = 'Ayarlar: ' + server.name;
+        document.getElementById('edit-server-name').value = server.name;
+        document.getElementById('edit-server-avatar').value = server.avatar || '';
+        
+        serverSettingsModal.style.display = 'flex';
+    };
+
+    document.getElementById('btn-save-server-settings')?.addEventListener('click', () => {
+        if (!activeSettingsServerId) return;
+        const name = document.getElementById('edit-server-name').value;
+        const avatar = document.getElementById('edit-server-avatar').value;
+        socket.emit('edit-server', { serverId: activeSettingsServerId, name, avatar }, r => {
+            if (r.success) {
+                showToast('Sunucu güncellendi');
+                serverSettingsModal.style.display = 'none';
+                const s = servers.find(s => s.id === activeSettingsServerId);
+                if (s) { s.name = r.server.name; s.avatar = r.server.avatar; renderServerList(); }
+            } else showToast(r.message || 'Hata oluştu', 'error');
+        });
+    });
+
+    document.getElementById('btn-leave-server')?.addEventListener('click', () => {
+        if (!activeSettingsServerId) return;
+        if (!confirm('Bu sunucudan ayrılmak istediğinize emin misiniz?')) return;
+        socket.emit('leave-server', activeSettingsServerId, r => {
+            if (r.success) {
+                showToast('Sunucudan ayrıldınız');
+                serverSettingsModal.style.display = 'none';
+                servers = servers.filter(s => s.id !== activeSettingsServerId);
+                renderServerList();
+                document.getElementById('nav-friends').click(); 
+            } else showToast(r.message || 'Hata', 'error');
+        });
+    });
+
+    document.getElementById('btn-delete-server')?.addEventListener('click', () => {
+        if (!activeSettingsServerId) return;
+        if (!confirm('DİKKAT! Sunucu kalıcı olarak silinecek. Emin misiniz?')) return;
+        socket.emit('delete-server', activeSettingsServerId, r => {
+            if (r.success) {
+                showToast('Sunucu silindi');
+                serverSettingsModal.style.display = 'none';
+                servers = servers.filter(s => s.id !== activeSettingsServerId);
+                renderServerList();
+                document.getElementById('nav-friends').click();
+            } else showToast(r.message || 'Hata', 'error');
+        });
+    });
+
+    // Profil Avatar Güncelleme ve Hesap Silme
+    document.getElementById('pp-save-avatar')?.addEventListener('click', () => {
+        const url = document.getElementById('pp-avatar-url').value;
+        if (!url) return showToast('Açık bir URL girin', 'error');
+        currentUser.profilePic = url;
+        myAvatarImg.src = url;
+        document.getElementById('pp-avatar').src = url;
+        showToast('Profil resmi güncellendi (Yerel oturum)');
+    });
+
+    document.getElementById('pp-delete-account-btn')?.addEventListener('click', () => {
+        if (confirm('DİKKAT: Hesabınız kalıcı olarak SİLİNECEKTİR. Emin misiniz?')) {
+            socket.emit('delete-account', r => {
+                if (r.success) {
+                    showToast('Hesabınız başarıyla silindi.', 'error');
+                    profilePanel.style.display = 'none';
+                    doLogout();
+                } else showToast(r.message, 'error');
+            });
+        }
+    });
+
+    // Ses Kanalı Ekleme
+    document.getElementById('confirm-create-voice')?.addEventListener('click', () => {
+        if (!currentServerId) return;
+        const name = document.getElementById('new-voice-name').value;
+        const limit = document.getElementById('new-voice-limit').value;
+        socket.emit('create-voice-channel', { serverId: currentServerId, name, limit }, r => {
+            if (r.success) {
+                showToast('Kanal oluşturuldu');
+                createVoiceModal.style.display = 'none';
+                document.getElementById('new-voice-name').value = '';
+                document.getElementById('new-voice-limit').value = '';
+                const s = servers.find(s => s.id === currentServerId);
+                if (s) { s.channels.push(r.channel); renderSidebar(); }
+            } else showToast(r.message || 'Hata', 'error');
+        });
+    });
+
+    document.querySelectorAll('.close-modal').forEach(b => {
+        b.addEventListener('click', e => {
+            e.target.closest('.modal-overlay').style.display = 'none';
+        });
+    });
 
     // ── URL DAVET PARAMETRESİ ─────────────────────────────────────────
     try {

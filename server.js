@@ -128,6 +128,34 @@ io.on('connection', (socket) => {
         cb({ success: true, user: { id: user.id, username: user.username, profilePic: user.profilePic, status: user.status } });
     });
 
+    // HESAP SİL
+    socket.on('delete-account', (cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false, message: 'Giriş yapılmamış.' });
+        const user = db.users[uid];
+        // Arkadaşlardan çıkar
+        user.friends.forEach(fId => {
+            const f = db.users[fId];
+            if (f) {
+                f.friends = f.friends.filter(id => id !== uid);
+                const fs = findSocket(fId);
+                if (fs) io.to(fs).emit('friend-removed', { userId: uid });
+            }
+        });
+        // Sahipliğindeki sunucuları sil
+        user.servers.forEach(sId => {
+            const srv = db.servers[sId];
+            if (srv && srv.ownerId === uid) {
+                delete db.servers[sId]; // Basit silme
+            } else if (srv) {
+                srv.members = srv.members.filter(id => id !== uid);
+            }
+        });
+        delete db.users[uid];
+        delete db.sessions[socket.id];
+        cb({ success: true });
+    });
+
     // ARKADAŞ İSTEĞİ
     socket.on('send-friend-request', (targetUsername, cb) => {
         const uid = db.sessions[socket.id];
@@ -194,6 +222,70 @@ io.on('connection', (socket) => {
         user.servers.push(serverId);
         socket.join(serverId);
         cb({ success: true, server: srv });
+    });
+
+    // SUNUCUDAN AYRIL
+    socket.on('leave-server', (serverId, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const user = db.users[uid];
+        const srv = db.servers[serverId];
+        if (!srv) return cb({ success: false });
+        if (srv.ownerId === uid) return cb({ success: false, message: 'Sunucu sahibi sunucudan ayrılamaz, silmelidir.' });
+        
+        srv.members = srv.members.filter(id => id !== uid);
+        user.servers = user.servers.filter(id => id !== serverId);
+        socket.leave(serverId);
+        cb({ success: true });
+    });
+
+    // SUNUCUYU SİL
+    socket.on('delete-server', (serverId, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const srv = db.servers[serverId];
+        if (!srv) return cb({ success: false });
+        if (srv.ownerId !== uid) return cb({ success: false, message: 'Sadece sunucu sahibi silebilir.' });
+        
+        // Üyelerin listesinden çıkar
+        srv.members.forEach(mId => {
+            const m = db.users[mId];
+            if (m) m.servers = m.servers.filter(id => id !== serverId);
+        });
+        delete db.servers[serverId];
+        cb({ success: true });
+    });
+
+    // SUNUCUYU DÜZENLE
+    socket.on('edit-server', ({ serverId, name, avatar }, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const srv = db.servers[serverId];
+        if (!srv) return cb({ success: false });
+        if (srv.ownerId !== uid) return cb({ success: false, message: 'Sadece kurucu düzenleyebilir.' });
+        
+        if (name && name.trim()) srv.name = name.trim();
+        if (avatar && avatar.trim()) srv.avatar = avatar.trim();
+        cb({ success: true, server: srv });
+    });
+
+    // SES KANALI OLUŞTUR
+    socket.on('create-voice-channel', ({ serverId, name, limit }, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const srv = db.servers[serverId];
+        if (!srv) return cb({ success: false });
+        
+        if (!name || !name.trim()) return cb({ success: false, message: 'Kanal adı boş olamaz.' });
+        
+        const newChannel = {
+            id: generateId(),
+            name: name.trim().toLowerCase().replace(/\s+/g, '-'),
+            type: 'voice',
+            limit: limit ? parseInt(limit, 10) : 0
+        };
+        srv.channels.push(newChannel);
+        cb({ success: true, channel: newChannel, server: srv });
     });
 
     // SUNUCUYA KATIL
