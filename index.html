@@ -125,8 +125,25 @@
         </header>
 
         <div class="view-container">
-            <!-- Ses grid -->
+            <!-- SESLİ KANAL IZGARA -->
             <div id="voice-grid" class="voice-grid" style="display:none;"></div>
+
+            <!-- EKRAN PAYLAŞIMI OVERLAY -->
+            <div id="screen-share-overlay" class="ss-overlay" style="display:none;">
+                <div class="ss-header">
+                    <div class="ss-info">
+                        <div class="ss-live-badge">CANLI</div>
+                        <span id="ss-sharer-name">Kullanıcı Paylaşıyor</span>
+                    </div>
+                    <div class="ss-actions">
+                        <button id="ss-minimize-btn" title="Küçült"><i data-lucide="minus"></i></button>
+                        <button id="ss-fullscreen-btn" title="Tam Ekran"><i data-lucide="maximize"></i></button>
+                        <button id="ss-pip-btn" title="PiP"><i data-lucide="external-link"></i></button>
+                        <button id="ss-stop-btn" class="ss-stop-btn" style="display:none;">Paylaşımı Durdur</button>
+                    </div>
+                </div>
+                <video id="ss-video" autoplay playsinline></video>
+            </div>
 
             <!-- Hoş geldin ekranı -->
             <div id="welcome-message" class="welcome-state">
@@ -135,8 +152,18 @@
                 <p>Sol taraftan bir arkadaş veya kanal seç.</p>
             </div>
 
-            <!-- Arkadaş profil görünümü -->
-            <div id="friend-profile-view" class="friend-profile-view" style="display:none;"></div>
+            <!-- Arkadaş profil görünümü (MERKEZDEKİ CHAT ALANI) -->
+            <div id="dm-chat-view" class="dm-chat-view" style="display:none;">
+                <div class="chat-messages" id="dm-chat-messages"></div>
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <input type="text" id="dm-chat-input" placeholder="Mesaj gönder..." disabled>
+                        <button class="send-btn" id="dm-send-msg-btn"><i data-lucide="send"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eski profil görünümü kaldırıldı, sağ tarafa taşındı -->
         </div>
 
         <!-- Ses kontrolleri -->
@@ -162,16 +189,29 @@
         <div class="members-list" id="members-list"></div>
     </aside>
 
-    <!-- 5 ─ Chat Paneli -->
-    <aside class="chat-panel">
-        <header class="chat-header">
-            <h3 id="chat-panel-title">Sohbet</h3>
-        </header>
-        <div class="chat-messages" id="chat-messages"></div>
-        <div class="chat-input-area">
-            <div class="input-wrapper">
-                <input type="text" id="chat-input" placeholder="Bir kanal seç..." disabled>
-                <button class="send-btn" id="send-msg-btn"><i data-lucide="send"></i></button>
+    <!-- 5 ─ Sağ Panel (Chat veya Profil) -->
+    <aside class="right-panel" id="right-panel">
+        <!-- Sunucu Chat Paneli -->
+        <div class="chat-panel" id="server-chat-panel">
+            <header class="chat-header">
+                <h3 id="chat-panel-title">Sohbet</h3>
+            </header>
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Bir kanal seç..." disabled>
+                    <button class="send-btn" id="send-msg-btn"><i data-lucide="send"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arkadaş Profil Paneli (DM modunda burası gözükecek) -->
+        <div class="profile-sidebar" id="friend-profile-sidebar" style="display:none;">
+            <header class="ps-header">
+                <h3>PROFİL BİLGİLERİ</h3>
+            </header>
+            <div id="ps-content" class="ps-content">
+                <!-- script.js tarafından doldurulacak -->
             </div>
         </div>
     </aside>

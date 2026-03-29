@@ -2,17 +2,21 @@
    NEXUS – Design System
 ════════════════════════════════════════════════════ */
 :root {
-    --bg-dark:        #050208;
-    --glass-bg:       rgba(18, 12, 28, 0.75);
-    --glass-panel:    rgba(25, 20, 40, 0.60);
-    --glass-border:   rgba(255,255,255,0.10);
-    --accent-cyan:    #00d1ff;
-    --accent-green:   #00ff9d;
-    --accent-purple:  #8b5cf6;
-    --accent-red:     #ff4d4d;
-    --text-primary:   #f8fafc;
+    --bg-dark: #050208;
+    --bg-sidebar: #0a0712;
+    --glass-panel: rgba(25, 20, 40, 0.65);
+    --glass-bg: rgba(18, 12, 28, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --accent-purple: #8b5cf6;
+    --accent-indigo: #6366f1;
+    --accent-cyan: #22d3ee;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-yellow: #f59e0b;
+    --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
-    --tr: all 0.28s cubic-bezier(0.16,1,0.3,1);
+    --text-muted: #64748b;
+    --tr: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --rail-w:    68px;
     --sidebar-w: 236px;
     --members-w: 212px;
@@ -477,6 +481,185 @@ body {
 .screen-view { position: absolute; inset: 0; border-radius: 10px; object-fit: contain; background: #000; }
 .user-label { font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: center; }
 
+/* ════ SAĞ PANEL & PROFİL SİDEBAR ════ */
+.right-panel {
+    width: 320px;
+    background: var(--bg-sidebar);
+    border-left: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-sidebar {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.ps-header {
+    height: 56px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.ps-content {
+    padding: 24px 16px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.ps-avatar-section {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.ps-avatar-wrap {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 16px;
+}
+
+.ps-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--bg-sidebar);
+}
+
+.ps-status-dot {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid var(--bg-sidebar);
+}
+
+.ps-user-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.ps-user-status {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.ps-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.ps-btn {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    height: 48px;
+    display: flex;
+    align-items: center; justify-content: center;
+    color: var(--text-primary);
+    cursor: pointer; transition: var(--tr);
+}
+
+.ps-btn:hover { background: rgba(255,255,255,.1); }
+.ps-btn.danger:hover { background: var(--accent-red); color: white; border-color: transparent; }
+
+.ps-section h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+.common-server-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.03);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.cs-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 80%;
+    background: var(--accent-purple);
+    display: flex;
+    align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.no-common {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    margin-top: 12px;
+}
+
+/* ════ DM CHAT VIEW (CENTER) ════ */
+.dm-chat-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-dark);
+}
+
+/* ════ SPEAKING & STATUS ICONS ════ */
+@keyframes speak-pulse {
+    0%   { box-shadow: 0 0 0 0px var(--accent-green); }
+    100% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+}
+
+.voice-card {
+    background: var(--glass-panel); border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 20px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    transition: var(--tr); position: relative;
+}
+
+.voice-card.is-speaking .voice-avatar-wrap {
+    animation: speak-pulse 1s infinite;
+    border: 3px solid var(--accent-green);
+}
+
+.voice-avatar-wrap { 
+    position: relative; width: 80px; height: 80px;
+    border: 3px solid transparent; transition: 0.2s; border-radius: 50%; 
+}
+.voice-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+.voice-status-icons {
+    position: absolute; bottom: 0; right: 0;
+    display: flex; gap: 2px;
+}
+.v-icon {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bg-dark); border: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent-red); box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.v-icon i { width: 12px; height: 12px; }
+
 /* ════ MEMBERS PANEL ════ */
 .members-panel {
     width: var(--members-w); min-width: var(--members-w);
@@ -805,3 +988,17 @@ body {
 }
 
 .glass-panel { background: var(--glass-panel); backdrop-filter: blur(20px); }
+/* ────── LIGHT MODE OVERRIDES ────── */
+:root[style*="--bg-sidebar: #ffffff"] .server-sidebar {
+    background: #f8fafc; border-right-color: #e2e8f0;
+}
+:root[style*="--bg-sidebar: #ffffff"] .text-channel:hover,
+:root[style*="--bg-sidebar: #ffffff"] .text-channel.active {
+    background: #e2e8f0; color: #0f172a;
+}
+:root[style*="--bg-sidebar: #ffffff"] .message {
+    color: #0f172a; border-bottom: 1px solid #f1f5f9;
+}
+:root[style*="--bg-sidebar: #ffffff"] .welcome-state {
+    background: #ffffff;
+}

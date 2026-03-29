@@ -106,6 +106,8 @@ io.on('connection', (socket) => {
             const taken = Object.values(db.users).find(u => u.username.toLowerCase() === newUsername.toLowerCase() && u.id !== uid);
             if (taken) return cb({ success: false, message: 'Bu kullanıcı adı alınmış.' });
             user.username = newUsername.trim();
+            // Tüm dünyaya duyur (gerçek zamanlı isim güncellemesi)
+            io.emit('username-changed', { userId: uid, newUsername: user.username });
         }
         if (newPassword && newPassword.trim()) user.password = newPassword.trim();
 
@@ -259,10 +261,13 @@ io.on('connection', (socket) => {
         for (const cId in voiceRooms) {
             const idx = voiceRooms[cId].findIndex(r => r.socketId === socket.id);
             if (idx !== -1) {
-                const pId = voiceRooms[cId][idx].peerId;
-                voiceRooms[cId].splice(idx, 1);
-                socket.leave(cId);
-                socket.to(cId).emit('user-disconnected', pId);
+                const oldRoomId = cId;
+                const pId = voiceRooms[oldRoomId][idx].peerId;
+                voiceRooms[oldRoomId].splice(idx, 1);
+                socket.leave(oldRoomId);
+                socket.to(oldRoomId).emit('user-disconnected', pId);
+                // Oda boşaldıysa veya güncellendiyse duyur
+                io.emit('voice-channel-update', { channelId: oldRoomId, count: voiceRooms[oldRoomId].length });
                 break;
             }
         }
@@ -271,21 +276,36 @@ io.on('connection', (socket) => {
 
         if (peerId) {
             if (!voiceRooms[channelId]) voiceRooms[channelId] = [];
-            const existing = voiceRooms[channelId].map(p => ({ peerId: p.peerId, username: p.username }));
-            voiceRooms[channelId].push({ socketId: socket.id, userId: uid, peerId, username: user.username });
+            const existing = voiceRooms[channelId].map(p => ({ 
+                peerId: p.peerId, 
+                username: p.username,
+                isMuted: p.isMuted || false,
+                isDeafened: p.isDeafened || false
+            }));
+            voiceRooms[channelId].push({ socketId: socket.id, userId: uid, peerId, username: user.username, isMuted: false, isDeafened: false });
             socket.to(channelId).emit('user-connected', peerId, user.username);
+            // Yeni sayıyı herkese duyur
+            io.emit('voice-channel-update', { channelId, count: voiceRooms[channelId].length });
             if (typeof cb === 'function') cb({ success: true, existingPeers: existing });
         } else {
             if (typeof cb === 'function') cb({ success: true, existingPeers: [] });
         }
     });
 
-    // KANALDAN AYRIL
-    socket.on('leave-channel', (channelId, peerId) => {
-        socket.leave(channelId);
-        if (voiceRooms[channelId])
-            voiceRooms[channelId] = voiceRooms[channelId].filter(u => u.socketId !== socket.id);
-        socket.to(channelId).emit('user-disconnected', peerId);
+    socket.on('voice-state-update', d => {
+        // d: { channelId, isMuted, isDeafened }
+        const uid = db.sessions[socket.id];
+        if (!uid) return;
+        
+        // Odayı bul ve güncelle
+        if (voiceRooms[d.channelId]) {
+            const user = voiceRooms[d.channelId].find(u => u.socketId === socket.id);
+            if (user) {
+                user.isMuted = d.isMuted;
+                user.isDeafened = d.isDeafened;
+            }
+        }
+        socket.to(d.channelId).emit('voice-state-changed', { peerId: d.peerId, isMuted: d.isMuted, isDeafened: d.isDeafened });
     });
 
     // KANAL MESAJLARI GETİR

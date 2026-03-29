@@ -52,10 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
         reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 10,
     });
 
-    // Sayfa yüklenince otomatik giriş — socket hazır olduktan sonra
-    socket.once('connect', () => {
-        // tryAutoLogin() fonksiyonu aşağıda tanımlanır; küçük gecikme ile çağır
-        setTimeout(() => { if (typeof tryAutoLogin === 'function') tryAutoLogin(); }, 100);
+    // Sayfa yenilenince uyarı ver
+    window.addEventListener('beforeunload', (e) => {
+        // Oturum açıksa uyarı ver
+        if (currentUser) {
+            e.preventDefault();
+            e.returnValue = 'Sayfa yenilenirse giriş ekranına yönlendirilirsiniz. Onaylıyor musunuz?';
+        }
     });
 
     // ── STATE ────────────────────────────────────────────────────────
@@ -144,8 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit(type, { username, password, profilePic }, res => {
             if (res.success) {
                 if (type === 'login') {
-                    // ✔ Oturumu kaydet (sayfa yenilenince otomatik giriş için)
-                    try { localStorage.setItem('nexus_session', JSON.stringify({ username, password })); } catch(e) {}
                     applyLoginResult(res);
                 } else {
                     authError.style.color = 'var(--accent-green)';
@@ -194,26 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Sayfa yüklenince kaydetilmiş oturumu geri yükle
-    function tryAutoLogin() {
-        let saved;
-        try { saved = JSON.parse(localStorage.getItem('nexus_session')); } catch(e) {}
-        if (!saved?.username || !saved?.password) return;
-
-        // Auth ekranında bir "Yükleniyor" göster
-        authError.style.color = 'var(--accent-cyan)';
-        authError.textContent = 'Oturum geri yükleniyor...';
-
-        socket.emit('login', { username: saved.username, password: saved.password }, res => {
-            if (res.success) {
-                applyLoginResult(res, true); // sessiz giriş
-            } else {
-                // Kaydedilmiş oturum artık geçerli değil (sunucu yeniden başlamış olabilir)
-                try { localStorage.removeItem('nexus_session'); } catch(e) {}
-                authError.textContent = '';
-            }
-        });
-    }
+    // Sayfa yüklenince otomatik giriş fonksiyonu kaldırıldı (güvenlik için)
+    function tryAutoLogin() {}
 
     loginBtn.addEventListener('click', () => handleAuth('login'));
     registerBtn.addEventListener('click', () => handleAuth('register'));
@@ -367,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="font-size:11px;color:${STATUS_COLOR[isOn?'online':'offline']};">${STATUS_LABEL[isOn?'online':'offline']}</div>
                     </div>
                     <span class="dm-notif-dot friend-dm-dot" data-uid="${f.id}" style="display:${notifCnt>0?'flex':'none'};">${notifCnt>9?'9+':notifCnt||''}</span>`;
-                li.addEventListener('click', () => { showFriendProfile(f); clearDmNotif(f.id); });
+                li.addEventListener('click', () => { openDM(f); clearDmNotif(f.id); });
                 dynamicChannelList.appendChild(li);
             });
         } else {
@@ -399,33 +382,45 @@ document.addEventListener('DOMContentLoaded', () => {
         initLucide();
     }
 
-    // ── ARKADAŞ PROFİL GÖRÜNÜMÜ (MERKEZ) ─────────────────────────────
-    function showFriendProfile(friend) {
-        currentDmFriend = friend;
-        renderSidebar(); // aktif satırı güncelle
-
+    // ── ARKADAŞ PROFİL GÖRÜNÜMÜ (SAĞ PANEL) ──────────────────────────
+    function renderFriendProfile(friend) {
         const isOn = onlineFriends.has(friend.id);
-        friendProfileView.innerHTML = `
-            <div class="fpv-content">
-                <div class="fpv-avatar-wrap">
-                    <img src="${friend.profilePic||`https://api.dicebear.com/7.x/avataaars/svg?seed=${esc(friend.username)}`}" class="fpv-avatar-img" alt="">
-                    <span class="fpv-status-ring" style="border-color:${STATUS_COLOR[isOn?'online':'offline']};"></span>
+        const commonSrvs = servers.filter(s => s.members && s.members.some(m => m.id === friend.id));
+        
+        const psContent = document.getElementById('ps-content');
+        psContent.innerHTML = `
+            <div class="ps-avatar-section">
+                <div class="ps-avatar-wrap">
+                    <img src="${friend.profilePic||`https://api.dicebear.com/7.x/avataaars/svg?seed=${esc(friend.username)}`}" class="ps-avatar-img" alt="">
+                    <span class="ps-status-dot" style="background:${STATUS_COLOR[friend.status||(isOn?'online':'offline')]};"></span>
                 </div>
-                <div class="fpv-username">${esc(friend.username)}</div>
-                <div class="fpv-status-badge" style="color:${STATUS_COLOR[isOn?'online':'offline']};">
-                    <span class="status-dot-sm" style="background:${STATUS_COLOR[isOn?'online':'offline']};"></span>
-                    ${STATUS_LABEL[isOn?'online':'offline']}
-                </div>
-                <div class="fpv-actions">
-                    <button class="primary-btn fpv-msg-btn" id="fpv-msg-btn">
-                        <i data-lucide="message-circle" style="width:15px;height:15px;"></i> Mesaj Gönder
-                    </button>
-                    <button class="fpv-action-btn" id="fpv-copy-btn" data-tooltip="Kullanıcı adını kopyala">
-                        <i data-lucide="copy" style="width:15px;height:15px;"></i> Adı Kopyala
-                    </button>
-                    <button class="fpv-action-btn danger" id="fpv-remove-btn" data-tooltip="Arkadaşlıktan çıkar">
-                        <i data-lucide="user-x" style="width:15px;height:15px;"></i> Arkadaşı Kaldır
-                    </button>
+                <h2 class="ps-user-name">${esc(friend.username)}</h2>
+                <p class="ps-user-status" style="color:${STATUS_COLOR[friend.status||(isOn?'online':'offline')]};">
+                    ${STATUS_LABEL[friend.status||(isOn?'online':'offline')]}
+                </p>
+            </div>
+
+            <div class="ps-actions-grid">
+                <button class="ps-btn" id="ps-call-btn" title="Sesli Ara">
+                    <i data-lucide="phone" style="width:16px;height:16px;"></i>
+                </button>
+                <button class="ps-btn" id="ps-copy-btn" title="Kullanıcı Adını Kopyala">
+                    <i data-lucide="copy" style="width:16px;height:16px;"></i>
+                </button>
+                <button class="ps-btn danger" id="ps-remove-btn" title="Arkadaşlıktan Çıkar">
+                    <i data-lucide="user-x" style="width:16px;height:16px;"></i>
+                </button>
+            </div>
+
+            <div class="ps-section">
+                <h4>ORTAK SUNUCULAR</h4>
+                <div class="common-servers-list">
+                    ${commonSrvs.length ? commonSrvs.map(s => `
+                        <div class="common-server-item">
+                            <span class="cs-icon">${s.name[0].toUpperCase()}</span>
+                            <span>${esc(s.name)}</span>
+                        </div>
+                    `).join('') : '<p class="no-common">Ortak sunucu yok</p>'}
                 </div>
             </div>`;
 
@@ -490,14 +485,24 @@ document.addEventListener('DOMContentLoaded', () => {
         myPeer.on('open', id => console.log('PeerJS ID:', id));
         myPeer.on('error', e => { console.error('PeerJS:', e); showToast('Bağlantı hatası: ' + e.type, 'error'); });
         navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true, sampleRate:48000 }, video:false })
-            .then(stream => {
+            .then(async stream => {
                 localStream = stream;
                 myPeer.on('call', call => {
                     call.answer(isScreenSharing && screenStream ? screenStream : localStream);
                     call.on('stream', us => handleRemoteStream(call.peer, us));
                     peers[call.peer] = call;
                 });
-                loadAudioDevices();
+                await loadAudioDevices();
+                // Varsayılan mikrofonu seç
+                if (audioDevices.length > 0) {
+                    const def = audioDevices[0].deviceId;
+                    // Eğer varsayılan değilse tekrar iste (bazı tarayıcılarda gerekebilir)
+                    if (def !== 'default') {
+                        const ns = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: def } } });
+                        localStream.getTracks().forEach(t => t.stop());
+                        localStream = ns;
+                    }
+                }
             }).catch(e => console.warn('Mikrofon:', e));
     }
 
@@ -515,7 +520,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentChannelType === 'voice') leaveVoice(false);
             currentChannelId = channel.id; currentServerId = serverId; currentChannelType = 'text';
             currentDmFriend  = null;
-            friendProfileView.style.display = 'none';
             renderSidebar();
             chatInput.disabled = false;
             chatInput.placeholder = `#${channel.name} kanalına yaz...`;
@@ -544,7 +548,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentChannelId = channel.id; currentServerId = serverId; currentChannelType = 'voice';
         currentDmFriend  = null;
         renderSidebar();
-        friendProfileView.style.display = 'none';
         welcomeMessage.style.display  = 'none';
         voiceGrid.style.display       = 'grid';
         voiceGrid.innerHTML           = '';
@@ -557,12 +560,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res) return;
             (res.existingPeers || []).forEach(ep => {
                 addVoiceCard(ep.peerId, ep.username, false);
+                updateVoiceStatusUI(ep.peerId, ep.isMuted, ep.isDeafened);
+                
                 const st = isScreenSharing && screenStream ? screenStream : localStream;
                 if (st) {
                     const call = myPeer.call(ep.peerId, st);
-                    if (call) { call.on('stream', us => handleRemoteStream(ep.peerId, us)); peers[ep.peerId] = call; }
+                    if (call) { 
+                        call.on('stream', us => {
+                            handleRemoteStream(ep.peerId, us);
+                            startSpeakingDetection(us, ep.peerId);
+                        }); 
+                        peers[ep.peerId] = call; 
+                    }
                 }
             });
+            if (localStream) startSpeakingDetection(localStream, myPeer.id);
         });
     }
 
@@ -571,15 +583,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const st = isScreenSharing && screenStream ? screenStream : localStream;
         if (st) {
             const call = myPeer.call(peerId, st);
-            if (call) { call.on('stream', us => handleRemoteStream(peerId, us)); peers[peerId] = call; }
+            if (call) { 
+                call.on('stream', us => {
+                    handleRemoteStream(peerId, us);
+                    startSpeakingDetection(us, peerId);
+                }); 
+                peers[peerId] = call; 
+            }
         }
         addVoiceCard(peerId, username, false);
     });
-    socket.on('user-disconnected', peerId => {
-        if (peers[peerId]) { peers[peerId].close(); delete peers[peerId]; }
-        document.querySelector(`[data-peer-id="${peerId}"]`)?.remove();
-        if (voiceGrid.style.display === 'grid' && !voiceGrid.querySelector('.voice-card')) leaveVoice(false);
+    socket.on('voice-state-changed', d => {
+        // d: { peerId, isMuted, isDeafened }
+        updateVoiceStatusUI(d.peerId, d.isMuted, d.isDeafened);
     });
+
+    function updateVoiceStatusUI(peerId, isMuted, isDeafened) {
+        const wrap = document.getElementById(`v-status-${peerId}`);
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        if (isMuted) wrap.innerHTML += `<div class="v-icon" title="Mikrofon Kapalı"><i data-lucide="mic-off" style="width:11px;height:11px;"></i></div>`;
+        if (isDeafened) wrap.innerHTML += `<div class="v-icon" title="Ses Kapalı"><i data-lucide="volume-x" style="width:11px;height:11px;"></i></div>`;
+        initLucide();
+    }
 
     function handleRemoteStream(peerId, stream) {
         const card = document.querySelector(`[data-peer-id="${peerId}"]`);
@@ -851,24 +877,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── DURUM TAKİBİ (REAL-TIME) ──────────────────────────────────────
     socket.on('friend-online', d => {
         onlineFriends.add(d.userId);
-        if (currentContext === 'friends') renderSidebar();
+        renderSidebar();
         refreshMembersPanel();
     });
 
     socket.on('friend-offline', d => {
         onlineFriends.delete(d.userId);
-        if (currentContext === 'friends') renderSidebar();
+        renderSidebar();
         refreshMembersPanel();
     });
 
-    socket.on('friend-status', d => {
-        // Arkadaşın durumunu friends array'inde güncelle
-        const f = friends.find(u => u.id === d.userId);
-        if (f) f.status = d.status;
-        if (currentContext === 'friends') renderSidebar();
+    socket.on('status-update', d => {
+        if (d.userId === currentUser.id) return;
+        if (d.status === 'offline') onlineFriends.delete(d.userId);
+        else onlineFriends.add(d.userId);
+        renderSidebar();
+        if (currentDmFriend?.id === d.userId) renderFriendProfile(currentDmFriend);
         refreshMembersPanel();
     });
-    }
+
+    socket.on('username-changed', d => {
+        if (currentUser && d.userId === currentUser.id) currentUser.username = d.newUsername;
+        const f = friends.find(u => u.id === d.userId);
+        if (f) f.username = d.newUsername;
+        
+        if (currentDmFriend && currentDmFriend.id === d.userId) {
+            currentDmFriend.username = d.newUsername;
+            renderFriendProfile(currentDmFriend);
+        }
+        renderSidebar();
+        refreshMembersPanel();
+    });
+
+    socket.on('voice-channel-update', d => {
+        const el = document.querySelector(`[data-channel-id="${d.channelId}"] .channel-name`);
+        if (el) {
+            const baseName = el.textContent.split(' (')[0];
+            el.textContent = d.count > 0 ? `${baseName} (${d.count})` : baseName;
+        }
+    });
 
     notifBtn.addEventListener('click', e => {
         e.stopPropagation(); renderNotifList();
@@ -1116,6 +1163,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tema
     let isLightTheme = false;
+    
+    micBtn.addEventListener('click', () => {
+        isMuted = !isMuted;
+        if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted;
+        micBtn.classList.toggle('active', isMuted);
+        micBtn.innerHTML = isMuted ? '<i data-lucide="mic-off"></i>' : '<i data-lucide="mic"></i>';
+        initLucide();
+        
+        socket.emit('voice-state-update', { channelId: currentChannelId, peerId: myPeer.id, isMuted, isDeafened });
+        updateVoiceStatusUI(myPeer.id, isMuted, isDeafened);
+    });
+
+    deafenBtn.addEventListener('click', () => {
+        isDeafened = !isDeafened;
+        document.querySelectorAll('.voice-grid audio').forEach(a => {
+            if (a.closest('[data-peer-id]')?.dataset.peerId !== myPeer?.id) a.muted = isDeafened;
+        });
+        deafenBtn.classList.toggle('active', isDeafened);
+        deafenBtn.innerHTML = isDeafened ? '<i data-lucide="volume-x"></i>' : '<i data-lucide="headphones"></i>';
+        initLucide();
+        
+        socket.emit('voice-state-update', { channelId: currentChannelId, peerId: myPeer.id, isMuted, isDeafened });
+        updateVoiceStatusUI(myPeer.id, isMuted, isDeafened);
+    });
+
     // Oturumu yüklemeden önce temayı çek
     try {
         const savedTheme = localStorage.getItem('nexus_theme');
@@ -1127,21 +1199,25 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('nexus_theme', isLightTheme ? 'light' : 'dark');
         
         if (isLightTheme) {
-            document.documentElement.style.setProperty('--bg-dark',       '#eef0f5');
-            document.documentElement.style.setProperty('--glass-panel',   'rgba(240,240,255,0.85)');
-            document.documentElement.style.setProperty('--glass-bg',      'rgba(230,230,250,0.9)');
-            document.documentElement.style.setProperty('--glass-border',  'rgba(0,0,0,0.10)');
-            document.documentElement.style.setProperty('--text-primary',  '#1a1030');
-            document.documentElement.style.setProperty('--text-secondary','#5a5080');
-            document.body.style.background = '#eef0f5';
+            document.documentElement.style.setProperty('--bg-dark',       '#f1f5f9');
+            document.documentElement.style.setProperty('--bg-sidebar',    '#ffffff');
+            document.documentElement.style.setProperty('--glass-panel',   'rgba(255,255,255,0.7)');
+            document.documentElement.style.setProperty('--glass-bg',      'rgba(255,255,255,0.9)');
+            document.documentElement.style.setProperty('--glass-border',  'rgba(0,0,0,0.08)');
+            document.documentElement.style.setProperty('--text-primary',  '#0f172a');
+            document.documentElement.style.setProperty('--text-secondary','#475569');
+            document.documentElement.style.setProperty('--text-muted',    '#94a3b8');
+            document.body.style.background = '#f1f5f9';
             document.getElementById('as-theme-toggle').textContent = '🌙 Koyu Moda Geç';
         } else {
             document.documentElement.style.setProperty('--bg-dark',       '#050208');
-            document.documentElement.style.setProperty('--glass-panel',   'rgba(25,20,40,0.60)');
-            document.documentElement.style.setProperty('--glass-bg',      'rgba(18,12,28,0.75)');
-            document.documentElement.style.setProperty('--glass-border',  'rgba(255,255,255,0.10)');
+            document.documentElement.style.setProperty('--bg-sidebar',    '#0a0712');
+            document.documentElement.style.setProperty('--glass-panel',   'rgba(25,20,40,0.65)');
+            document.documentElement.style.setProperty('--glass-bg',      'rgba(18,12,28,0.85)');
+            document.documentElement.style.setProperty('--glass-border',  'rgba(255,255,255,0.12)');
             document.documentElement.style.setProperty('--text-primary',  '#f8fafc');
             document.documentElement.style.setProperty('--text-secondary','#94a3b8');
+            document.documentElement.style.setProperty('--text-muted',    '#64748b');
             document.body.style.background = '#050208';
             document.getElementById('as-theme-toggle').textContent = '☀️ Açık Moda Geç';
         }
