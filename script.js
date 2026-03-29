@@ -1,8 +1,3 @@
-// ── Kilitli Audio Context'i kullanıcı etkileşimiyle aç ──────────
-document.addEventListener('click', () => {
-    if (window._audioCtx && window._audioCtx.state === 'suspended') window._audioCtx.resume();
-}, { once: false });
-
 document.addEventListener('DOMContentLoaded', () => {
     // ── DOM ──────────────────────────────────────────────────────────
     const authOverlay        = document.getElementById('auth-overlay');
@@ -52,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 10,
     });
 
+<<<<<<< HEAD
     // Sayfa yenilenince uyarı ver
     window.addEventListener('beforeunload', (e) => {
         // Oturum açıksa uyarı ver
@@ -61,6 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+=======
+>>>>>>> parent of 87eae11 (v8)
     // ── STATE ────────────────────────────────────────────────────────
     let currentUser       = null;
     let friends           = [];
@@ -147,7 +145,39 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit(type, { username, password, profilePic }, res => {
             if (res.success) {
                 if (type === 'login') {
+<<<<<<< HEAD
                     applyLoginResult(res);
+=======
+                    currentUser   = res.user;
+                    friends       = res.friends || [];
+                    servers       = res.servers || [];
+                    pendingRequests = res.friendRequests || [];
+                    myStatus      = res.user.status || 'online';
+                    onlineFriends = new Set(res.onlineFriendIds || []);
+
+                    authOverlay.style.display = 'none';
+                    appContainer.style.display = 'flex';
+                    myAvatarImg.src = currentUser.profilePic;
+                    updateMyStatusDot();
+                    updateNotifBadge();
+                    initWebRTC();
+                    renderServerList();
+                    renderSidebar();
+                    setTimeout(attachTooltips, 100);
+                    initLucide();
+
+                    // Davet linki bekliyor mu?
+                    const inv = window._pendingInvite;
+                    if (inv) {
+                        delete window._pendingInvite;
+                        if (confirm(`Sunucuya katılmak isteniyor.\nID: ${inv}\nDevam et?`)) {
+                            socket.emit('join-server', inv, r => {
+                                if (r.success) { servers.push(r.server); renderServerList(); activateServer(r.server); }
+                                else showToast(r.message, 'error');
+                            });
+                        }
+                    }
+>>>>>>> parent of 87eae11 (v8)
                 } else {
                     authError.style.color = 'var(--accent-green)';
                     authError.textContent = res.message;
@@ -160,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+<<<<<<< HEAD
     // Giriş sonucunu uygula (hem manuel hem otomatik giriş için)
     function applyLoginResult(res, silent = false) {
         currentUser     = res.user;
@@ -198,6 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sayfa yüklenince otomatik giriş fonksiyonu kaldırıldı (güvenlik için)
     function tryAutoLogin() {}
 
+=======
+>>>>>>> parent of 87eae11 (v8)
     loginBtn.addEventListener('click', () => handleAuth('login'));
     registerBtn.addEventListener('click', () => handleAuth('register'));
     authPasswordInput.addEventListener('keypress', e => { if (e.key==='Enter') handleAuth('login'); });
@@ -476,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── WEBRTC ───────────────────────────────────────────────────────
     function initWebRTC() {
+<<<<<<< HEAD
         myPeer = new Peer(undefined, { host:'0.peerjs.com', port:443, secure:true,
             config: { iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -486,6 +520,13 @@ document.addEventListener('DOMContentLoaded', () => {
         myPeer.on('error', e => { console.error('PeerJS:', e); showToast('Bağlantı hatası: ' + e.type, 'error'); });
         navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true, sampleRate:48000 }, video:false })
             .then(async stream => {
+=======
+        myPeer = new Peer(undefined, { host:'0.peerjs.com', port:443, secure:true });
+        myPeer.on('open', id => console.log('PeerJS:', id));
+        myPeer.on('error', e => console.error('PeerJS:', e));
+        navigator.mediaDevices.getUserMedia({ audio:true, video:false })
+            .then(stream => {
+>>>>>>> parent of 87eae11 (v8)
                 localStream = stream;
                 myPeer.on('call', call => {
                     call.answer(isScreenSharing && screenStream ? screenStream : localStream);
@@ -556,7 +597,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addVoiceCard(myPeer.id, currentUser.username, true);
 
         socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer.id }, res => {
-            console.log('[Voice] Kanala katıldın, mevcut peer sayısı:', res?.existingPeers?.length);
             if (!res) return;
             (res.existingPeers || []).forEach(ep => {
                 addVoiceCard(ep.peerId, ep.username, false);
@@ -610,34 +650,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleRemoteStream(peerId, stream) {
         const card = document.querySelector(`[data-peer-id="${peerId}"]`);
         if (!card) return;
-
-        // Audio: mutlaka play() çağır, autoplay engeline karşı
-        const audioTracks = stream.getAudioTracks();
-        if (audioTracks.length > 0) {
-            const audio = card.querySelector('audio');
-            if (audio) {
-                audio.srcObject = stream;
-                audio.volume = 1;
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {
-                        // Autoplay engeli — ilk tıklamada başlat
-                        const resumeAudio = () => { audio.play().catch(()=>{}); document.removeEventListener('click', resumeAudio); };
-                        document.addEventListener('click', resumeAudio);
-                    });
-                }
-            }
-        }
-
-        // Video: ekran paylaşımı varsa overlay'de göster
-        const videoTracks = stream.getVideoTracks();
-        if (videoTracks.length > 0) {
-            const sharerName = card.querySelector('.user-label')?.textContent || 'Kullanıcı';
-            showScreenShareOverlay(stream, sharerName, false, peerId);
-        } else {
-            // Video bitti, overlay'i kapat
-            const ssOverlay = document.getElementById('screen-share-overlay');
-            if (ssOverlay?.dataset.peerId === peerId) hideScreenShareOverlay();
+        const audio = card.querySelector('audio');
+        if (audio) audio.srcObject = stream;
+        const video = card.querySelector('video');
+        if (video) {
+            if (stream.getVideoTracks().length > 0) { video.srcObject = stream; video.style.display = 'block'; }
+            else video.style.display = 'none';
         }
     }
 
@@ -660,47 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceGrid.style.display = 'none'; voiceGrid.innerHTML = '';
         voiceControls.style.display = 'none';
         welcomeMessage.style.display = 'flex';
-        hideScreenShareOverlay();
         currentChannelType = null; renderSidebar();
-    }
-
-    // ── EKRAN PAYLAŞIMI OVERLAY ────────────────────────────────────────
-    function showScreenShareOverlay(stream, sharerName, isSelf, peerId) {
-        const overlay = document.getElementById('screen-share-overlay');
-        const video   = document.getElementById('ss-video');
-        const title   = document.getElementById('ss-sharer-name');
-        if (!overlay || !video) return;
-        overlay.style.display = 'flex';
-        overlay.dataset.peerId = peerId || '';
-        title.textContent = isSelf ? 'Ekran Paylaşıyorsun' : `${sharerName} paylaşıyor`;
-        video.srcObject = stream;
-        video.play().catch(() => {});
-
-        const stopBtn = document.getElementById('ss-stop-btn');
-        if (isSelf) {
-            stopBtn.style.display = '';
-            stopBtn.onclick = () => stopScreenShare();
-        } else {
-            stopBtn.style.display = 'none';
-        }
-
-        document.getElementById('ss-fullscreen-btn').onclick = () => {
-            if (video.requestFullscreen) video.requestFullscreen();
-            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-        };
-        document.getElementById('ss-pip-btn').onclick = async () => {
-            try { await video.requestPictureInPicture(); } catch(e) { showToast('PiP desteklenmiyor', 'error'); }
-        };
-        document.getElementById('ss-minimize-btn').onclick = () => {
-            overlay.classList.toggle('ss-minimized');
-        };
-    }
-
-    function hideScreenShareOverlay() {
-        const overlay = document.getElementById('screen-share-overlay');
-        if (overlay) overlay.style.display = 'none';
-        const video = document.getElementById('ss-video');
-        if (video) { video.srcObject = null; }
     }
 
     // ── CHAT ─────────────────────────────────────────────────────────
@@ -861,14 +839,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }));
         notifList.querySelectorAll('.reject-btn').forEach(btn => btn.addEventListener('click', () => {
-            const fromId = btn.dataset.id;
-            const n = pendingRequests.find(r=>r.fromId===fromId)?.fromUsername;
-            pendingRequests = pendingRequests.filter(r => r.fromId !== fromId);
-            // Sunucuya reddet — DB'den sil ve gönderene bildir
-            socket.emit('reject-friend-request', fromId, () => {});
+            const n = pendingRequests.find(r=>r.fromId===btn.dataset.id)?.fromUsername;
+            pendingRequests = pendingRequests.filter(r => r.fromId !== btn.dataset.id);
             updateNotifBadge(); renderNotifList();
             if (n) showToast(`${n} isteği reddedildi`);
         }));
+<<<<<<< HEAD
     }
 
     socket.on('friend-request-rejected', d => {
@@ -939,6 +915,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             check();
         } catch(e) { console.warn('Speaking detection error:', e); }
+=======
+>>>>>>> parent of 87eae11 (v8)
     }
 
     notifBtn.addEventListener('click', e => {
@@ -1107,8 +1085,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function doLogout() {
-        // Kaydedilmiş oturumu temizle
-        try { localStorage.removeItem('nexus_session'); } catch(e) {}
         leaveVoice(true);
         profilePanel.style.display = 'none';
         appSettingsModal.style.display = 'none';
@@ -1117,8 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentContext = 'friends'; currentChannelId = null; currentServerId = null;
         appContainer.style.display = 'none';
         authOverlay.style.display = 'flex';
-        authError.textContent = '';
-        authUsernameInput.value = ''; authPasswordInput.value = '';
+        authUsernameInput.value = ''; authPasswordInput.value = ''; authError.textContent = '';
         socket.disconnect(); socket.connect();
     }
 
@@ -1185,6 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { res.textContent = 'Test başarısız!'; }
     });
 
+<<<<<<< HEAD
     // ── TEMA ─────────────────────────────────────────────────────────
     let isLightTheme = false;
 
@@ -1226,6 +1202,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('as-theme-toggle').addEventListener('click', () => {
         toggleTheme();
         showToast(isLightTheme ? 'Açık tema aktif' : 'Koyu tema aktif');
+=======
+    // Tema
+    document.getElementById('as-theme-toggle').addEventListener('click', () => {
+        const light = document.body.classList.toggle('theme-light');
+        document.getElementById('as-theme-toggle').textContent = light ? '🌙 Koyu Moda Geç' : '☀️ Açık Moda Geç';
+        showToast(light ? 'Açık tema' : 'Koyu tema');
+>>>>>>> parent of 87eae11 (v8)
     });
 
     // Ayarlardan çıkış
@@ -1258,42 +1241,25 @@ document.addEventListener('DOMContentLoaded', () => {
     screenShareBtn.addEventListener('click', async () => {
         try {
             if (!isScreenSharing) {
-                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: true });
-                isScreenSharing = true;
-                screenShareBtn.classList.add('btn-active');
-
-                // Kendi overlay'ini göster
-                showScreenShareOverlay(screenStream, currentUser.username, true, myPeer?.id);
-
-                // Tüm peerlara video track'i push et
-                const vt = screenStream.getVideoTracks()[0];
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
+                isScreenSharing = true; screenShareBtn.classList.add('btn-active');
+                const myCard = document.querySelector(`[data-peer-id="${myPeer?.id}"]`);
+                if (myCard) { const v=myCard.querySelector('video'); v.srcObject=screenStream; v.style.display='block'; }
                 Object.values(peers).forEach(call => {
-                    const senders = call.peerConnection?.getSenders() || [];
-                    const vs = senders.find(s => s.track?.kind === 'video');
-                    if (vs) vs.replaceTrack(vt).catch(() => {});
-                    else call.peerConnection?.addTrack(vt, screenStream);
+                    const vt = screenStream.getVideoTracks()[0];
+                    const s  = call.peerConnection?.getSenders().find(s=>s.track?.kind==='video');
+                    if (s && vt) s.replaceTrack(vt).catch(()=>{});
                 });
-
-                vt.addEventListener('ended', stopScreenShare);
+                screenStream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
                 showToast('Ekran paylaşımı başladı');
-            } else {
-                stopScreenShare();
-            }
-        } catch(e) {
-            if (e.name !== 'NotAllowedError') showToast('Ekran paylaşımı başarısız', 'error');
-        }
+            } else stopScreenShare();
+        } catch(e) { if (e.name!=='NotAllowedError') showToast('Ekran paylaşımı başarısız', 'error'); }
     });
 
     function stopScreenShare() {
-        if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
-        isScreenSharing = false;
-        screenShareBtn.classList.remove('btn-active');
-        hideScreenShareOverlay();
-        // Peerlara video track'i geri al (audio-only)
-        Object.values(peers).forEach(call => {
-            const vs = call.peerConnection?.getSenders()?.find(s => s.track?.kind === 'video');
-            if (vs) vs.replaceTrack(null).catch(() => {});
-        });
+        screenStream?.getTracks().forEach(t=>t.stop());
+        isScreenSharing = false; screenShareBtn.classList.remove('btn-active');
+        document.querySelector(`[data-peer-id="${myPeer?.id}"]`)?.querySelector('video')?.style.setProperty('display','none');
         showToast('Ekran paylaşımı durduruldu');
     }
 

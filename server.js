@@ -164,23 +164,6 @@ io.on('connection', (socket) => {
         cb({ success: true, friend: { id: fromUser.id, username: fromUser.username, profilePic: fromUser.profilePic } });
     });
 
-    // ARKADAŞ İSTEĞİ REDDET — sunucu tarafında sil + gönderene bildir
-    socket.on('reject-friend-request', (fromId, cb) => {
-        const uid = db.sessions[socket.id];
-        if (!uid) return typeof cb === 'function' ? cb({ success: false }) : null;
-        const user = db.users[uid];
-        // DB'den isteği sil (böylece gönderen tekrar istek atabilir)
-        db.friendRequests[uid] = (db.friendRequests[uid] || []).filter(r => r.fromId !== fromId);
-        // Gönderene bildir
-        const senderSocket = findSocket(fromId);
-        if (senderSocket && user) {
-            io.to(senderSocket).emit('friend-request-rejected', {
-                byId: uid, byUsername: user.username
-            });
-        }
-        if (typeof cb === 'function') cb({ success: true });
-    });
-
     // ARKADAŞI KALDIR
     socket.on('remove-friend', (friendId, cb) => {
         const uid = db.sessions[socket.id];
