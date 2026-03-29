@@ -1,11 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     // ── DOM ──────────────────────────────────────────────────────────
     const authOverlay        = document.getElementById('auth-overlay');
+    const loginBox           = document.getElementById('login-box');
+    const registerBox        = document.getElementById('register-box');
+    const showRegisterBtn    = document.getElementById('show-register-btn');
+    const showLoginBtn       = document.getElementById('show-login-btn');
     const loginBtn           = document.getElementById('login-btn');
     const registerBtn        = document.getElementById('register-btn');
     const authUsernameInput  = document.getElementById('auth-username');
     const authPasswordInput  = document.getElementById('auth-password');
     const authError          = document.getElementById('auth-error');
+    const regUsernameInput   = document.getElementById('reg-username');
+    const regPasswordInput   = document.getElementById('reg-password');
+    const regError           = document.getElementById('reg-error');
     const appContainer       = document.getElementById('app-container');
     const mainHeaderTitle    = document.getElementById('main-header-title');
     const mainHeaderIcon     = document.getElementById('main-header-icon');
@@ -125,11 +132,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleAuth(type) {
-        const username = authUsernameInput.value.trim();
-        const password = authPasswordInput.value.trim();
-        if (!username || !password) { authError.style.color='var(--accent-red)'; authError.textContent='Tüm alanları doldurun.'; return; }
-        authError.textContent = '';
+        let username, password, errorEl;
+        if (type === 'login') {
+            username = authUsernameInput.value.trim();
+            password = authPasswordInput.value.trim();
+            errorEl = authError;
+        } else {
+            username = regUsernameInput.value.trim();
+            password = regPasswordInput.value.trim();
+            errorEl = regError;
+        }
+
+        if (!username || !password) { errorEl.style.color='var(--accent-red)'; errorEl.textContent='Tüm alanları doldurun.'; return; }
+        errorEl.textContent = '';
         const profilePic = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+        
         socket.emit(type, { username, password, profilePic }, res => {
             if (res.success) {
                 if (type === 'login') {
@@ -163,13 +180,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else {
-                    authError.style.color = 'var(--accent-green)';
-                    authError.textContent = res.message;
-                    authPasswordInput.value = '';
+                    errorEl.style.color = 'var(--accent-green)';
+                    errorEl.textContent = res.message;
+                    // Switch to login explicitly and DONT delete the password
+                    setTimeout(() => {
+                        registerBox.style.display = 'none';
+                        loginBox.style.display = 'block';
+                        authUsernameInput.value = username;
+                        authPasswordInput.value = password;
+                        authError.style.color = 'var(--accent-green)';
+                        authError.textContent = 'Hesabınız başarıyla oluşturuldu, şimdi giriş yapabilirsiniz.';
+                    }, 800);
                 }
             } else {
-                authError.style.color = 'var(--accent-red)';
-                authError.textContent = res.message;
+                errorEl.style.color = 'var(--accent-red)';
+                errorEl.textContent = res.message;
             }
         });
     }
@@ -178,6 +203,25 @@ document.addEventListener('DOMContentLoaded', () => {
     registerBtn.addEventListener('click', () => handleAuth('register'));
     authPasswordInput.addEventListener('keypress', e => { if (e.key==='Enter') handleAuth('login'); });
     authUsernameInput.addEventListener('keypress', e => { if (e.key==='Enter') authPasswordInput.focus(); });
+    regPasswordInput.addEventListener('keypress', e => { if (e.key==='Enter') handleAuth('register'); });
+    regUsernameInput.addEventListener('keypress', e => { if (e.key==='Enter') regPasswordInput.focus(); });
+
+    showRegisterBtn.addEventListener('click', () => {
+        loginBox.style.display = 'none';
+        registerBox.style.display = 'block';
+    });
+    showLoginBtn.addEventListener('click', () => {
+        registerBox.style.display = 'none';
+        loginBox.style.display = 'block';
+    });
+
+    // Otomatik çıkışı engelleme (Sayfayı yenilerken uyarı)
+    window.addEventListener('beforeunload', (e) => {
+        if (currentUser) {
+            e.preventDefault();
+            e.returnValue = ''; 
+        }
+    });
 
     // ── DURUM NOKTALARI ──────────────────────────────────────────────
     const STATUS_COLOR = { online:'var(--accent-green)', dnd:'var(--accent-red)', invisible:'#607d8b', offline:'#607d8b' };
