@@ -319,9 +319,11 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceGrid.style.display = 'none'; voiceControls.style.display = 'none';
         welcomeMessage.style.display = 'flex'; friendProfileView.style.display = 'none';
         document.getElementById('center-chat-area').style.display = 'none';
+        const globalActions = document.getElementById('global-server-actions');
+        if (globalActions) globalActions.style.display = 'none';
         
         const rsPanel = document.getElementById('right-side-panel');
-        if (rsPanel) rsPanel.style.display = 'none';
+        if (rsPanel) rsPanel.style.display = 'flex';
         
         membersPanel.style.display = 'none';
         document.querySelectorAll('.server-icon, .rail-btn').forEach(el => el.classList.remove('active'));
@@ -355,17 +357,17 @@ document.addEventListener('DOMContentLoaded', () => {
         currentContext = s.id; currentServerId = s.id;
         currentChannelType = null;
         
-        // Taşıma mantığı: Chat'i sağ panele taşı
-        const chatArea = document.getElementById('center-chat-area');
         const rsPanel = document.getElementById('right-side-panel');
-        rsPanel.appendChild(chatArea);
+        if (rsPanel) rsPanel.style.display = 'none';
+        
+        document.getElementById('global-server-actions').style.display = 'flex';
         
         chatMessages.innerHTML = ''; chatInput.disabled = true;
         friendProfileView.style.display = 'none';
         document.getElementById('center-chat-area').style.display = 'flex';
         
         if (rightPanelTitle) rightPanelTitle.textContent = s.name + ' Sohbeti';
-        welcomeMessage.style.display = 'flex';
+        welcomeMessage.style.display = 'none';
         mainHeaderTitle.textContent = s ? s.name : 'Nexus';
         mainHeaderIcon.setAttribute('data-lucide', 'server');
         toggleMembersBtn.style.display = '';
@@ -373,9 +375,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (membersOpen) {
             openMembersPanel(s.id);
-            if (rsPanel) rsPanel.style.display = 'none';
         } else {
-            if (rsPanel) rsPanel.style.display = 'flex';
+            membersPanel.style.display = 'none';
         }
         
         // Sunucunun ilk text kanalını "Global Chat" yap
@@ -853,14 +854,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggleMembersBtn.addEventListener('click', () => {
         membersOpen = !membersOpen;
-        const rsPanel = document.getElementById('right-side-panel');
         if (membersOpen) {
             membersPanel.style.display = 'flex';
             if (currentServerId) openMembersPanel(currentServerId);
-            if (rsPanel && currentServerId) rsPanel.style.display = 'none';
         } else {
             membersPanel.style.display = 'none';
-            if (rsPanel && currentServerId) rsPanel.style.display = 'flex';
         }
         toggleMembersBtn.classList.toggle('active', membersOpen);
     });
@@ -1015,6 +1013,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('join-server-modal').style.display = 'none';
                 renderServerList(); activateServer(res.server);
                 showToast(`"${res.server.name}" sunucusuna katıldın!`);
+            } else {
+                showToast(res.message, 'error');
+            }
+        });
+    });
+
+    // Ses Kanalı Oluşturma Olayı
+    document.getElementById('confirm-create-voice').addEventListener('click', () => {
+        const name = document.getElementById('new-voice-name').value.trim();
+        const limit = document.getElementById('new-voice-limit').value.trim();
+        if (!name || !currentServerId) return;
+        socket.emit('create-voice-channel', { serverId: currentServerId, name, limit }, res => {
+            if (res.success) {
+                document.getElementById('create-voice-modal').style.display = 'none';
+                showToast('Ses kanalı oluşturuldu!');
+                // channel-created socket olayı sayfayı yenileyecektir.
+                const s = servers.find(svr => svr.id === currentServerId);
+                if (s && !s.channels.find(c => c.id === res.channel.id)) {
+                    s.channels.push(res.channel);
+                    renderSidebar();
+                }
             } else {
                 showToast(res.message, 'error');
             }

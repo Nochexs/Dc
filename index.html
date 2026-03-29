@@ -176,9 +176,17 @@
                 <button class="control-btn" id="deafen-btn" title="Ses"><i data-lucide="headphones"></i></button>
                 <button class="control-btn accent" id="screen-share-btn" title="Ekran Paylaş"><i data-lucide="monitor"></i></button>
                 <button class="control-btn leave-btn" id="disconnect-btn" title="Ayrıl"><i data-lucide="phone-off"></i></button>
-                <button class="control-btn" id="btn-invite-server" title="Davet Linki Kopyala"><i data-lucide="share-2"></i></button>
-                <button class="control-btn" id="btn-server-settings" title="Sunucu Ayarları"><i data-lucide="settings"></i></button>
             </div>
+        </div>
+
+        <!-- Her zaman görünen sunucu alt paneli -->
+        <div class="global-server-actions" id="global-server-actions" style="display:none; padding:12px 20px; background:var(--bg-glass-2); border-top:1px solid rgba(255,255,255,0.05); display:flex; gap:10px; justify-content:center; align-items:center; flex-shrink:0;">
+            <button class="secondary-btn" id="btn-invite-server" style="flex:1;">
+                <i data-lucide="share-2" style="width:16px; height:16px; margin-right:6px;"></i> Davet Et
+            </button>
+            <button class="secondary-btn" id="btn-server-settings" style="flex:1;">
+                <i data-lucide="settings" style="width:16px; height:16px; margin-right:6px;"></i> Sunucu Ayarları
+            </button>
         </div>
     </section>
 
@@ -358,12 +366,6 @@
         <p id="pp-msg" class="status-msg" style="text-align:center;margin:0 24px;"></p>
 
         <div class="pp-section" style="padding-top:0;">
-            <p style="font-size:12px; margin-bottom:5px; color:var(--text-secondary);">PROFiL RESMİ (URL)</p>
-            <div class="pp-row" style="margin-bottom:15px;">
-                <input type="text" id="pp-avatar-url" placeholder="https://..." class="glass-input">
-                <button class="primary-btn" id="pp-save-avatar">Kullan</button>
-            </div>
-            
             <button id="pp-logout-btn" class="logout-btn" style="margin-bottom:10px;">
                 <i data-lucide="log-out"></i> Çıkış Yap
             </button>
