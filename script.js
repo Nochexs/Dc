@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages       = document.getElementById('chat-messages');
     const chatInput          = document.getElementById('chat-input');
     const sendMsgBtn         = document.getElementById('send-msg-btn');
-    const chatPanelTitle     = document.getElementById('chat-panel-title');
+    const rightPanelTitle    = document.getElementById('right-panel-title');
     const micBtn             = document.getElementById('mic-btn');
     const deafenBtn          = document.getElementById('deafen-btn');
     const screenShareBtn     = document.getElementById('screen-share-btn');
@@ -350,8 +350,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentChannelId = null; currentChannelType = null;
         chatMessages.innerHTML = ''; chatInput.disabled = true;
         friendProfileView.style.display = 'none';
+        document.getElementById('center-chat-area').style.display = 'none';
+        const rsPanel = document.getElementById('right-side-panel');
+        if (rsPanel) rsPanel.style.display = 'none';
         welcomeMessage.style.display = 'flex';
-        mainHeaderTitle.textContent = s.name;
+        mainHeaderTitle.textContent = s ? s.name : 'Nexus';
         mainHeaderIcon.setAttribute('data-lucide', 'server');
         toggleMembersBtn.style.display = '';
         renderSidebar();
@@ -427,36 +430,55 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSidebar(); // aktif satırı güncelle
 
         const isOn = onlineFriends.has(friend.id);
+        
+        // Modal / Panelleri düzenle
+        welcomeMessage.style.display = 'none';
+        voiceGrid.style.display = 'none';
+        document.getElementById('center-chat-area').style.display = 'flex';
+        
+        const rsPanel = document.getElementById('right-side-panel');
+        if (rsPanel) rsPanel.style.display = 'flex';
+        friendProfileView.style.display = 'flex';
+
+        // Yeni buton listesi
         friendProfileView.innerHTML = `
-            <div class="fpv-content">
+            <div class="fpv-content" style="flex:1; padding:20px;">
                 <div class="fpv-avatar-wrap">
                     <img src="${friend.profilePic||`https://api.dicebear.com/7.x/avataaars/svg?seed=${esc(friend.username)}`}" class="fpv-avatar-img" alt="">
                     <span class="fpv-status-ring" style="border-color:${STATUS_COLOR[isOn?'online':'offline']};"></span>
                 </div>
-                <div class="fpv-username">${esc(friend.username)}</div>
-                <div class="fpv-status-badge" style="color:${STATUS_COLOR[isOn?'online':'offline']};">
+                <div class="fpv-username" style="font-size:20px; font-weight:700; margin-top:10px;">${esc(friend.username)}</div>
+                <div class="fpv-status-badge" style="color:${STATUS_COLOR[isOn?'online':'offline']}; font-size:13px; margin-bottom:20px;">
                     <span class="status-dot-sm" style="background:${STATUS_COLOR[isOn?'online':'offline']};"></span>
                     ${STATUS_LABEL[isOn?'online':'offline']}
                 </div>
-                <div class="fpv-actions">
-                    <button class="primary-btn fpv-msg-btn" id="fpv-msg-btn">
-                        <i data-lucide="message-circle" style="width:15px;height:15px;"></i> Mesaj Gönder
+                <div class="fpv-actions" style="display:flex; flex-direction:column; gap:10px; width:100%;">
+                    <button class="primary-btn fpv-action-btn" id="fpv-call-btn" style="justify-content:center; padding:10px; border-radius:8px;">
+                        <i data-lucide="phone"></i> Arama Başlat
                     </button>
-                    <button class="fpv-action-btn" id="fpv-copy-btn" data-tooltip="Kullanıcı adını kopyala">
-                        <i data-lucide="copy" style="width:15px;height:15px;"></i> Adı Kopyala
+                    <button class="secondary-btn fpv-action-btn danger" id="fpv-remove-btn" style="justify-content:center; padding:10px; border-radius:8px; background:rgba(239,68,68,0.1); color:var(--text-danger); border:1px solid rgba(239,68,68,0.2);">
+                        <i data-lucide="user-x"></i> Arkadaşlıktan Sil
                     </button>
-                    <button class="fpv-action-btn danger" id="fpv-remove-btn" data-tooltip="Arkadaşlıktan çıkar">
-                        <i data-lucide="user-x" style="width:15px;height:15px;"></i> Arkadaşı Kaldır
+                    <button class="secondary-btn fpv-action-btn" id="fpv-copy-btn" style="justify-content:center; padding:10px; border-radius:8px; background:var(--glass-element);">
+                        <i data-lucide="copy"></i> Adı Kopyala
+                    </button>
+                    <hr style="border:none; border-top:1px solid var(--glass-border); margin:10px 0; width:100%;">
+                    <button class="secondary-btn fpv-action-btn" id="fpv-mutual-servers-btn" style="justify-content:space-between; padding:10px; border-radius:8px; background:var(--glass-element);">
+                        <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="server"></i> Ortak Sunucular</span>
+                        <i data-lucide="chevron-right" style="width:14px; opacity:0.5;"></i>
+                    </button>
+                    <button class="secondary-btn fpv-action-btn" id="fpv-mutual-friends-btn" style="justify-content:space-between; padding:10px; border-radius:8px; background:var(--glass-element);">
+                        <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="users"></i> Ortak Arkadaşlar</span>
+                        <i data-lucide="chevron-right" style="width:14px; opacity:0.5;"></i>
                     </button>
                 </div>
             </div>`;
 
-        welcomeMessage.style.display = 'none';
-        voiceGrid.style.display = 'none';
-        friendProfileView.style.display = 'flex';
         initLucide(); attachTooltips();
 
-        document.getElementById('fpv-msg-btn').addEventListener('click', () => openDM(friend));
+        document.getElementById('fpv-call-btn').addEventListener('click', () => {
+            showToast('Arama özelliği yakında eklenecek!', 'info');
+        });
         document.getElementById('fpv-copy-btn').addEventListener('click', () => {
             navigator.clipboard.writeText(friend.username).then(() => showToast(`"${friend.username}" kopyalandı!`));
         });
@@ -468,15 +490,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     onlineFriends.delete(friend.id);
                     currentDmFriend = null;
                     friendProfileView.style.display = 'none';
+                    document.getElementById('right-side-panel').style.display = 'none';
+                    document.getElementById('center-chat-area').style.display = 'none';
                     welcomeMessage.style.display = 'flex';
                     chatMessages.innerHTML = ''; chatInput.disabled = true;
                     renderSidebar();
-                    showToast(`${friend.username} arkadaş listenden çıkarıldı`);
+                    showToast(`${friend.username} listenden çıkarıldı`);
                 }
             });
         });
+        document.getElementById('fpv-mutual-servers-btn').addEventListener('click', () => showToast('Ortak sunucular yakında', 'info'));
+        document.getElementById('fpv-mutual-friends-btn').addEventListener('click', () => showToast('Ortak arkadaşlar yakında', 'info'));
 
-        // DM chat'i hazırla (sağ panelde)
+        // DM chat'i merkez alana yükle
         openDMChat(friend);
     }
 
@@ -489,7 +515,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentChannelId   = `dm_${friend.id}`;
         currentServerId    = null;
         currentChannelType = 'dm';
-        chatPanelTitle.textContent = friend.username;
+        if (rightPanelTitle) rightPanelTitle.textContent = "Profil";
+        mainHeaderTitle.textContent = friend.username;
+        mainHeaderIcon.setAttribute('data-lucide', 'at-sign');
+        initLucide();
+        
         chatInput.disabled  = false;
         chatInput.placeholder = `${friend.username} ile mesajlaş...`;
         chatMessages.innerHTML = '';
@@ -575,10 +605,18 @@ document.addEventListener('DOMContentLoaded', () => {
             currentChannelId = channel.id; currentServerId = serverId; currentChannelType = 'text';
             currentDmFriend  = null;
             friendProfileView.style.display = 'none';
+            document.getElementById('center-chat-area').style.display = 'flex';
+            const rsPanel = document.getElementById('right-side-panel');
+            if (rsPanel) rsPanel.style.display = 'none';
+            
             renderSidebar();
             chatInput.disabled = false;
             chatInput.placeholder = `#${channel.name} kanalına yaz...`;
-            chatPanelTitle.textContent = `#${channel.name}`;
+            
+            mainHeaderTitle.textContent = channel.name;
+            mainHeaderIcon.setAttribute('data-lucide', 'hash');
+            initLucide();
+            
             welcomeMessage.style.display = 'none';
             chatMessages.innerHTML = '';
 
@@ -604,7 +642,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDmFriend  = null;
         renderSidebar();
         friendProfileView.style.display = 'none';
+        const rsPanel = document.getElementById('right-side-panel');
+        if (rsPanel) rsPanel.style.display = 'none';
+        
         welcomeMessage.style.display  = 'none';
+        document.getElementById('center-chat-area').style.display = 'none';
         voiceGrid.style.display       = 'grid';
         voiceGrid.innerHTML           = '';
         voiceControls.style.display   = 'flex';
