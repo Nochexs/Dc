@@ -1,3 +1,8 @@
+// ── Kilitli Audio Context'i kullanıcı etkileşimiyle aç ──────────
+document.addEventListener('click', () => {
+    if (window._audioCtx && window._audioCtx.state === 'suspended') window._audioCtx.resume();
+}, { once: false });
+
 document.addEventListener('DOMContentLoaded', () => {
     // ── DOM ──────────────────────────────────────────────────────────
     const authOverlay        = document.getElementById('auth-overlay');
@@ -45,6 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let socket = io(window.location.origin, {
         transports: ['websocket', 'polling'],
         reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 10,
+    });
+
+    // Sayfa yüklenince otomatik giriş — socket hazır olduktan sonra
+    socket.once('connect', () => {
+        // tryAutoLogin() fonksiyonu aşağıda tanımlanır; küçük gecikme ile çağır
+        setTimeout(() => { if (typeof tryAutoLogin === 'function') tryAutoLogin(); }, 100);
     });
 
     // ── STATE ────────────────────────────────────────────────────────
@@ -133,35 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit(type, { username, password, profilePic }, res => {
             if (res.success) {
                 if (type === 'login') {
-                    currentUser   = res.user;
-                    friends       = res.friends || [];
-                    servers       = res.servers || [];
-                    pendingRequests = res.friendRequests || [];
-                    myStatus      = res.user.status || 'online';
-                    onlineFriends = new Set(res.onlineFriendIds || []);
-
-                    authOverlay.style.display = 'none';
-                    appContainer.style.display = 'flex';
-                    myAvatarImg.src = currentUser.profilePic;
-                    updateMyStatusDot();
-                    updateNotifBadge();
-                    initWebRTC();
-                    renderServerList();
-                    renderSidebar();
-                    setTimeout(attachTooltips, 100);
-                    initLucide();
-
-                    // Davet linki bekliyor mu?
-                    const inv = window._pendingInvite;
-                    if (inv) {
-                        delete window._pendingInvite;
-                        if (confirm(`Sunucuya katılmak isteniyor.\nID: ${inv}\nDevam et?`)) {
-                            socket.emit('join-server', inv, r => {
-                                if (r.success) { servers.push(r.server); renderServerList(); activateServer(r.server); }
-                                else showToast(r.message, 'error');
-                            });
-                        }
-                    }
+                    // ✔ Oturumu kaydet (sayfa yenilenince otomatik giriş için)
+                    try { localStorage.setItem('nexus_session', JSON.stringify({ username, password })); } catch(e) {}
+                    applyLoginResult(res);
                 } else {
                     authError.style.color = 'var(--accent-green)';
                     authError.textContent = res.message;
@@ -170,6 +155,62 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 authError.style.color = 'var(--accent-red)';
                 authError.textContent = res.message;
+            }
+        });
+    }
+
+    // Giriş sonucunu uygula (hem manuel hem otomatik giriş için)
+    function applyLoginResult(res, silent = false) {
+        currentUser     = res.user;
+        friends         = res.friends || [];
+        servers         = res.servers || [];
+        pendingRequests = res.friendRequests || [];
+        myStatus        = res.user.status || 'online';
+        onlineFriends   = new Set(res.onlineFriendIds || []);
+
+        authOverlay.style.display = 'none';
+        appContainer.style.display = 'flex';
+        myAvatarImg.src = currentUser.profilePic;
+        updateMyStatusDot();
+        updateNotifBadge();
+        initWebRTC();
+        renderServerList();
+        renderSidebar();
+        setTimeout(attachTooltips, 100);
+        initLucide();
+
+        if (!silent) {
+            // Davet linki bekliyor mu?
+            const inv = window._pendingInvite;
+            if (inv) {
+                delete window._pendingInvite;
+                if (confirm(`Sunucuya katılmak isteniyor.\nID: ${inv}\nDevam et?`)) {
+                    socket.emit('join-server', inv, r => {
+                        if (r.success) { servers.push(r.server); renderServerList(); activateServer(r.server); }
+                        else showToast(r.message, 'error');
+                    });
+                }
+            }
+        }
+    }
+
+    // Sayfa yüklenince kaydetilmiş oturumu geri yükle
+    function tryAutoLogin() {
+        let saved;
+        try { saved = JSON.parse(localStorage.getItem('nexus_session')); } catch(e) {}
+        if (!saved?.username || !saved?.password) return;
+
+        // Auth ekranında bir "Yükleniyor" göster
+        authError.style.color = 'var(--accent-cyan)';
+        authError.textContent = 'Oturum geri yükleniyor...';
+
+        socket.emit('login', { username: saved.username, password: saved.password }, res => {
+            if (res.success) {
+                applyLoginResult(res, true); // sessiz giriş
+            } else {
+                // Kaydedilmiş oturum artık geçerli değil (sunucu yeniden başlamış olabilir)
+                try { localStorage.removeItem('nexus_session'); } catch(e) {}
+                authError.textContent = '';
             }
         });
     }
@@ -440,10 +481,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── WEBRTC ───────────────────────────────────────────────────────
     function initWebRTC() {
-        myPeer = new Peer(undefined, { host:'0.peerjs.com', port:443, secure:true });
-        myPeer.on('open', id => console.log('PeerJS:', id));
-        myPeer.on('error', e => console.error('PeerJS:', e));
-        navigator.mediaDevices.getUserMedia({ audio:true, video:false })
+        myPeer = new Peer(undefined, { host:'0.peerjs.com', port:443, secure:true,
+            config: { iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]}
+        });
+        myPeer.on('open', id => console.log('PeerJS ID:', id));
+        myPeer.on('error', e => { console.error('PeerJS:', e); showToast('Bağlantı hatası: ' + e.type, 'error'); });
+        navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true, sampleRate:48000 }, video:false })
             .then(stream => {
                 localStream = stream;
                 myPeer.on('call', call => {
@@ -507,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addVoiceCard(myPeer.id, currentUser.username, true);
 
         socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer.id }, res => {
+            console.log('[Voice] Kanala katıldın, mevcut peer sayısı:', res?.existingPeers?.length);
             if (!res) return;
             (res.existingPeers || []).forEach(ep => {
                 addVoiceCard(ep.peerId, ep.username, false);
@@ -537,12 +584,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleRemoteStream(peerId, stream) {
         const card = document.querySelector(`[data-peer-id="${peerId}"]`);
         if (!card) return;
-        const audio = card.querySelector('audio');
-        if (audio) audio.srcObject = stream;
-        const video = card.querySelector('video');
-        if (video) {
-            if (stream.getVideoTracks().length > 0) { video.srcObject = stream; video.style.display = 'block'; }
-            else video.style.display = 'none';
+
+        // Audio: mutlaka play() çağır, autoplay engeline karşı
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            const audio = card.querySelector('audio');
+            if (audio) {
+                audio.srcObject = stream;
+                audio.volume = 1;
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(() => {
+                        // Autoplay engeli — ilk tıklamada başlat
+                        const resumeAudio = () => { audio.play().catch(()=>{}); document.removeEventListener('click', resumeAudio); };
+                        document.addEventListener('click', resumeAudio);
+                    });
+                }
+            }
+        }
+
+        // Video: ekran paylaşımı varsa overlay'de göster
+        const videoTracks = stream.getVideoTracks();
+        if (videoTracks.length > 0) {
+            const sharerName = card.querySelector('.user-label')?.textContent || 'Kullanıcı';
+            showScreenShareOverlay(stream, sharerName, false, peerId);
+        } else {
+            // Video bitti, overlay'i kapat
+            const ssOverlay = document.getElementById('screen-share-overlay');
+            if (ssOverlay?.dataset.peerId === peerId) hideScreenShareOverlay();
         }
     }
 
@@ -565,7 +634,47 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceGrid.style.display = 'none'; voiceGrid.innerHTML = '';
         voiceControls.style.display = 'none';
         welcomeMessage.style.display = 'flex';
+        hideScreenShareOverlay();
         currentChannelType = null; renderSidebar();
+    }
+
+    // ── EKRAN PAYLAŞIMI OVERLAY ────────────────────────────────────────
+    function showScreenShareOverlay(stream, sharerName, isSelf, peerId) {
+        const overlay = document.getElementById('screen-share-overlay');
+        const video   = document.getElementById('ss-video');
+        const title   = document.getElementById('ss-sharer-name');
+        if (!overlay || !video) return;
+        overlay.style.display = 'flex';
+        overlay.dataset.peerId = peerId || '';
+        title.textContent = isSelf ? 'Ekran Paylaşıyorsun' : `${sharerName} paylaşıyor`;
+        video.srcObject = stream;
+        video.play().catch(() => {});
+
+        const stopBtn = document.getElementById('ss-stop-btn');
+        if (isSelf) {
+            stopBtn.style.display = '';
+            stopBtn.onclick = () => stopScreenShare();
+        } else {
+            stopBtn.style.display = 'none';
+        }
+
+        document.getElementById('ss-fullscreen-btn').onclick = () => {
+            if (video.requestFullscreen) video.requestFullscreen();
+            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+        };
+        document.getElementById('ss-pip-btn').onclick = async () => {
+            try { await video.requestPictureInPicture(); } catch(e) { showToast('PiP desteklenmiyor', 'error'); }
+        };
+        document.getElementById('ss-minimize-btn').onclick = () => {
+            overlay.classList.toggle('ss-minimized');
+        };
+    }
+
+    function hideScreenShareOverlay() {
+        const overlay = document.getElementById('screen-share-overlay');
+        if (overlay) overlay.style.display = 'none';
+        const video = document.getElementById('ss-video');
+        if (video) { video.srcObject = null; }
     }
 
     // ── CHAT ─────────────────────────────────────────────────────────
@@ -726,11 +835,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }));
         notifList.querySelectorAll('.reject-btn').forEach(btn => btn.addEventListener('click', () => {
-            const n = pendingRequests.find(r=>r.fromId===btn.dataset.id)?.fromUsername;
-            pendingRequests = pendingRequests.filter(r => r.fromId !== btn.dataset.id);
+            const fromId = btn.dataset.id;
+            const n = pendingRequests.find(r=>r.fromId===fromId)?.fromUsername;
+            pendingRequests = pendingRequests.filter(r => r.fromId !== fromId);
+            // Sunucuya reddet — DB'den sil ve gönderene bildir
+            socket.emit('reject-friend-request', fromId, () => {});
             updateNotifBadge(); renderNotifList();
             if (n) showToast(`${n} isteği reddedildi`);
         }));
+
+    // Gönderdiğiniz istek reddedildiğinde
+    socket.on('friend-request-rejected', d => {
+        showToast(`${d.byUsername} arkadaşlık isteğini reddetti`, 'error');
+    });
     }
 
     notifBtn.addEventListener('click', e => {
@@ -899,6 +1016,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function doLogout() {
+        // Kaydedilmiş oturumu temizle
+        try { localStorage.removeItem('nexus_session'); } catch(e) {}
         leaveVoice(true);
         profilePanel.style.display = 'none';
         appSettingsModal.style.display = 'none';
@@ -907,7 +1026,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentContext = 'friends'; currentChannelId = null; currentServerId = null;
         appContainer.style.display = 'none';
         authOverlay.style.display = 'flex';
-        authUsernameInput.value = ''; authPasswordInput.value = ''; authError.textContent = '';
+        authError.textContent = '';
+        authUsernameInput.value = ''; authPasswordInput.value = '';
         socket.disconnect(); socket.connect();
     }
 
@@ -975,10 +1095,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Tema
+    let isLightTheme = false;
     document.getElementById('as-theme-toggle').addEventListener('click', () => {
-        const light = document.body.classList.toggle('theme-light');
-        document.getElementById('as-theme-toggle').textContent = light ? '🌙 Koyu Moda Geç' : '☀️ Açık Moda Geç';
-        showToast(light ? 'Açık tema' : 'Koyu tema');
+        isLightTheme = !isLightTheme;
+        if (isLightTheme) {
+            document.documentElement.style.setProperty('--bg-dark',       '#eef0f5');
+            document.documentElement.style.setProperty('--glass-panel',   'rgba(240,240,255,0.85)');
+            document.documentElement.style.setProperty('--glass-bg',      'rgba(230,230,250,0.9)');
+            document.documentElement.style.setProperty('--glass-border',  'rgba(0,0,0,0.10)');
+            document.documentElement.style.setProperty('--text-primary',  '#1a1030');
+            document.documentElement.style.setProperty('--text-secondary','#5a5080');
+            document.body.style.background = '#eef0f5';
+            document.getElementById('as-theme-toggle').textContent = '🌙 Koyu Moda Geç';
+            showToast('Açık tema aktif');
+        } else {
+            document.documentElement.style.setProperty('--bg-dark',       '#050208');
+            document.documentElement.style.setProperty('--glass-panel',   'rgba(25,20,40,0.60)');
+            document.documentElement.style.setProperty('--glass-bg',      'rgba(18,12,28,0.75)');
+            document.documentElement.style.setProperty('--glass-border',  'rgba(255,255,255,0.10)');
+            document.documentElement.style.setProperty('--text-primary',  '#f8fafc');
+            document.documentElement.style.setProperty('--text-secondary','#94a3b8');
+            document.body.style.background = '#050208';
+            document.getElementById('as-theme-toggle').textContent = '☀️ Açık Moda Geç';
+            showToast('Koyu tema aktif');
+        }
     });
 
     // Ayarlardan çıkış
@@ -1011,25 +1151,42 @@ document.addEventListener('DOMContentLoaded', () => {
     screenShareBtn.addEventListener('click', async () => {
         try {
             if (!isScreenSharing) {
-                screenStream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
-                isScreenSharing = true; screenShareBtn.classList.add('btn-active');
-                const myCard = document.querySelector(`[data-peer-id="${myPeer?.id}"]`);
-                if (myCard) { const v=myCard.querySelector('video'); v.srcObject=screenStream; v.style.display='block'; }
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: true });
+                isScreenSharing = true;
+                screenShareBtn.classList.add('btn-active');
+
+                // Kendi overlay'ini göster
+                showScreenShareOverlay(screenStream, currentUser.username, true, myPeer?.id);
+
+                // Tüm peerlara video track'i push et
+                const vt = screenStream.getVideoTracks()[0];
                 Object.values(peers).forEach(call => {
-                    const vt = screenStream.getVideoTracks()[0];
-                    const s  = call.peerConnection?.getSenders().find(s=>s.track?.kind==='video');
-                    if (s && vt) s.replaceTrack(vt).catch(()=>{});
+                    const senders = call.peerConnection?.getSenders() || [];
+                    const vs = senders.find(s => s.track?.kind === 'video');
+                    if (vs) vs.replaceTrack(vt).catch(() => {});
+                    else call.peerConnection?.addTrack(vt, screenStream);
                 });
-                screenStream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
+
+                vt.addEventListener('ended', stopScreenShare);
                 showToast('Ekran paylaşımı başladı');
-            } else stopScreenShare();
-        } catch(e) { if (e.name!=='NotAllowedError') showToast('Ekran paylaşımı başarısız', 'error'); }
+            } else {
+                stopScreenShare();
+            }
+        } catch(e) {
+            if (e.name !== 'NotAllowedError') showToast('Ekran paylaşımı başarısız', 'error');
+        }
     });
 
     function stopScreenShare() {
-        screenStream?.getTracks().forEach(t=>t.stop());
-        isScreenSharing = false; screenShareBtn.classList.remove('btn-active');
-        document.querySelector(`[data-peer-id="${myPeer?.id}"]`)?.querySelector('video')?.style.setProperty('display','none');
+        if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
+        isScreenSharing = false;
+        screenShareBtn.classList.remove('btn-active');
+        hideScreenShareOverlay();
+        // Peerlara video track'i geri al (audio-only)
+        Object.values(peers).forEach(call => {
+            const vs = call.peerConnection?.getSenders()?.find(s => s.track?.kind === 'video');
+            if (vs) vs.replaceTrack(null).catch(() => {});
+        });
         showToast('Ekran paylaşımı durduruldu');
     }
 
