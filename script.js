@@ -869,6 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateNotifBadge(); renderNotifList();
             if (n) showToast(`${n} isteği reddedildi`);
         }));
+    }
 
     socket.on('friend-request-rejected', d => {
         showToast(`${d.byUsername} arkadaşlık isteğini reddetti`, 'error');
@@ -905,7 +906,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentDmFriend.username = d.newUsername;
             renderFriendProfile(currentDmFriend);
         }
-        renderSidebar();
         refreshMembersPanel();
     });
 
@@ -916,6 +916,30 @@ document.addEventListener('DOMContentLoaded', () => {
             el.textContent = d.count > 0 ? `${baseName} (${d.count})` : baseName;
         }
     });
+
+    function startSpeakingDetection(stream, peerId) {
+        if (!window.AudioContext && !window.webkitAudioContext) return;
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            
+            const check = () => {
+                if (!document.querySelector(`[data-peer-id="${peerId}"]`)) {
+                    audioContext.close(); return;
+                }
+                analyser.getByteFrequencyData(data);
+                const avg = data.reduce((a,b) => a+b, 0) / data.length;
+                const card = document.querySelector(`[data-peer-id="${peerId}"]`);
+                if (card) card.classList.toggle('is-speaking', avg > 15);
+                requestAnimationFrame(check);
+            };
+            check();
+        } catch(e) { console.warn('Speaking detection error:', e); }
+    }
 
     notifBtn.addEventListener('click', e => {
         e.stopPropagation(); renderNotifList();
@@ -1161,32 +1185,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { res.textContent = 'Test başarısız!'; }
     });
 
-    // Tema
+    // ── TEMA ─────────────────────────────────────────────────────────
     let isLightTheme = false;
-    
-    micBtn.addEventListener('click', () => {
-        isMuted = !isMuted;
-        if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted;
-        micBtn.classList.toggle('active', isMuted);
-        micBtn.innerHTML = isMuted ? '<i data-lucide="mic-off"></i>' : '<i data-lucide="mic"></i>';
-        initLucide();
-        
-        socket.emit('voice-state-update', { channelId: currentChannelId, peerId: myPeer.id, isMuted, isDeafened });
-        updateVoiceStatusUI(myPeer.id, isMuted, isDeafened);
-    });
-
-    deafenBtn.addEventListener('click', () => {
-        isDeafened = !isDeafened;
-        document.querySelectorAll('.voice-grid audio').forEach(a => {
-            if (a.closest('[data-peer-id]')?.dataset.peerId !== myPeer?.id) a.muted = isDeafened;
-        });
-        deafenBtn.classList.toggle('active', isDeafened);
-        deafenBtn.innerHTML = isDeafened ? '<i data-lucide="volume-x"></i>' : '<i data-lucide="headphones"></i>';
-        initLucide();
-        
-        socket.emit('voice-state-update', { channelId: currentChannelId, peerId: myPeer.id, isMuted, isDeafened });
-        updateVoiceStatusUI(myPeer.id, isMuted, isDeafened);
-    });
 
     // Oturumu yüklemeden önce temayı çek
     try {
