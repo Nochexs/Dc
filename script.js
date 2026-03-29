@@ -39,7 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const joinServerModal    = document.getElementById('join-server-modal');
 
     // --- State ---
-    let socket          = io('/');
+    // Render.com'da ve local'de çalışır
+    let socket = io(window.location.origin, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 10,
+    });
     let myPeer          = null;
     let currentUser     = null;
     let friends         = [];
