@@ -336,6 +336,32 @@
                     <option>Varsayılan Mikrofon</option>
                 </select>
             </div>
+            <div class="settings-row">
+                <label><i data-lucide="mic-2" style="width:13px;height:13px;"></i> Çıkış Testi</label>
+                <div class="mic-test-bar">
+                    <div id="as-mic-test-level" style="width: 0%; height: 6px; background: var(--accent-green); border-radius: 3px; transition: width 0.1s ease;"></div>
+                </div>
+            </div>
+            <div class="settings-row">
+                <label><i data-lucide="sliders" style="width:13px;height:13px;"></i>
+                    Giriş Sesi <span id="as-mic-vol-label" style="color:var(--accent-cyan);">100%</span>
+                </label>
+                <input type="range" id="as-mic-vol" min="0" max="150" value="100" class="settings-slider">
+            </div>
+            <div class="settings-row">
+                <label><i data-lucide="waves" style="width:13px;height:13px;"></i> Gürültü Önleme</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="as-noise-sup" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="settings-row">
+                <label><i data-lucide="ear-off" style="width:13px;height:13px;"></i> Yankı Önleme</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="as-echo-canc" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
         </div>
 
         <!-- Ses Çıkış -->
@@ -363,15 +389,6 @@
                 <button class="secondary-btn" id="as-ping-btn" style="padding:7px 14px;font-size:13px;">Testi Başlat</button>
             </div>
             <div id="as-ping-result" style="font-size:12px;color:var(--text-secondary);padding:6px 0 0;"></div>
-        </div>
-
-        <!-- Tema -->
-        <div class="settings-section">
-            <div class="settings-label">GÖRÜNÜM</div>
-            <div class="settings-row">
-                <label><i data-lucide="sun" style="width:13px;height:13px;"></i> Tema</label>
-                <button class="secondary-btn" id="as-theme-toggle" style="padding:7px 14px;font-size:13px;">☀️ Açık Moda Geç</button>
-            </div>
         </div>
 
         <!-- Çıkış -->

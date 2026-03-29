@@ -78,6 +78,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let audioDevices      = [];
     let audioOutputs      = [];
 
+    // ── AYARLAR ──────────────────────────────────────────────────────
+    let appSettings = JSON.parse(localStorage.getItem('nexus_settings')) || {
+        micId: 'default',
+        micVol: 100,
+        noiseSup: true,
+        echoCanc: true,
+        spkId: 'default',
+        spkVol: 100
+    };
+    function saveSettings() { localStorage.setItem('nexus_settings', JSON.stringify(appSettings)); }
+
+    // ── SES İŞLEME ───────────────────────────────────────────────────
+    let audioContext;
+    let micGainNode;
+    let micAnalyser;
+    let rawLocalStream;
+    let testAnimFrame;
+
+
     // ── YARDIMCILAR ──────────────────────────────────────────────────
     function esc(s) {
         return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -482,12 +501,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ── WEBRTC ───────────────────────────────────────────────────────
+    async function getMicStream() {
+        const constraints = {
+            audio: {
+                deviceId: appSettings.micId !== 'default' ? { exact: appSettings.micId } : undefined,
+                noiseSuppression: appSettings.noiseSup,
+                echoCancellation: appSettings.echoCanc,
+                autoGainControl: true
+            },
+            video: false
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === 'suspended') await audioContext.resume();
+        
+        const source = audioContext.createMediaStreamSource(stream);
+        if (!micGainNode) {
+            micGainNode = audioContext.createGain();
+            micGainNode.gain.value = appSettings.micVol / 100;
+        }
+        if (!micAnalyser) {
+            micAnalyser = audioContext.createAnalyser();
+            micAnalyser.fftSize = 256;
+            micAnalyser.smoothingTimeConstant = 0.5;
+        }
+        
+        const dest = audioContext.createMediaStreamDestination();
+        
+        source.connect(micGainNode);
+        micGainNode.connect(micAnalyser);
+        micGainNode.connect(dest);
+        
+        rawLocalStream = stream;
+        return dest.stream;
+    }
+
     function initWebRTC() {
         myPeer = new Peer(undefined, { host:'0.peerjs.com', port:443, secure:true });
         myPeer.on('open', id => console.log('PeerJS:', id));
         myPeer.on('error', e => console.error('PeerJS:', e));
-        navigator.mediaDevices.getUserMedia({ audio:true, video:false })
+        getMicStream()
             .then(stream => {
                 localStream = stream;
                 myPeer.on('call', call => {
@@ -496,7 +550,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     peers[call.peer] = call;
                 });
                 loadAudioDevices();
-            }).catch(e => console.warn('Mikrofon:', e));
+            }).catch(e => {
+                console.warn('Mikrofon:', e);
+                // Eğer ayarlanan mikrofon yoksa varsayılana dön
+                if(appSettings.micId !== 'default') {
+                    appSettings.micId = 'default'; saveSettings();
+                    initWebRTC(); // Tekrar dene
+                }
+            });
     }
 
     async function loadAudioDevices() {
@@ -958,52 +1019,153 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── UYGULAMA AYARLARI ─────────────────────────────────────────────
     document.getElementById('open-settings-btn').addEventListener('click', openAppSettings);
 
+    function startMicTest() {
+        if (!micAnalyser) return;
+        const dataArray = new Uint8Array(micAnalyser.frequencyBinCount);
+        const levelBar = document.getElementById('as-mic-test-level');
+        
+        function updateLevel() {
+            if (appSettingsModal.style.display === 'none') return;
+            micAnalyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+            let avg = sum / dataArray.length;
+            let percent = Math.min(100, Math.max(0, (avg / 128) * 100 * (appSettings.micVol / 100)));
+            levelBar.style.width = percent + '%';
+            
+            // Renk değiştir (Ses çok yüksekse kırmızıya dönsün)
+            if (percent > 85) levelBar.style.background = 'var(--accent-red)';
+            else if (percent > 60) levelBar.style.background = '#eab308'; // yellow
+            else levelBar.style.background = 'var(--accent-green)';
+            
+            testAnimFrame = requestAnimationFrame(updateLevel);
+        }
+        testAnimFrame = requestAnimationFrame(updateLevel);
+    }
+
+    function stopMicTest() {
+        if (testAnimFrame) cancelAnimationFrame(testAnimFrame);
+        document.getElementById('as-mic-test-level').style.width = '0%';
+    }
+
     function openAppSettings() {
         const micSel = document.getElementById('as-mic-select');
         const spkSel = document.getElementById('as-spk-select');
         micSel.innerHTML = spkSel.innerHTML = '';
 
         if (!audioDevices.length) {
-            micSel.innerHTML = '<option>Cihaz bulunamadı</option>';
+            micSel.innerHTML = '<option value="default">Cihaz bulunamadı</option>';
         } else {
+            micSel.innerHTML = '<option value="default">Varsayılan Mikrofon</option>';
             audioDevices.forEach((d, i) => {
+                if(!d.deviceId) return;
                 const o = document.createElement('option');
                 o.value = d.deviceId; o.textContent = d.label || `Mikrofon ${i+1}`;
+                if (d.deviceId === appSettings.micId) o.selected = true;
                 micSel.appendChild(o);
             });
         }
         if (!audioOutputs.length) {
-            spkSel.innerHTML = '<option>Varsayılan Çıkış</option>';
+            spkSel.innerHTML = '<option value="default">Varsayılan Çıkış</option>';
         } else {
+            spkSel.innerHTML = '<option value="default">Varsayılan Hoparlör</option>';
             audioOutputs.forEach((d, i) => {
+                if(!d.deviceId) return;
                 const o = document.createElement('option');
                 o.value = d.deviceId; o.textContent = d.label || `Hoparlör ${i+1}`;
+                if (d.deviceId === appSettings.spkId) o.selected = true;
                 spkSel.appendChild(o);
             });
         }
-        document.getElementById('as-vol').value = 100;
-        document.getElementById('as-vol-label').textContent = '100%';
+        
+        document.getElementById('as-mic-vol').value = appSettings.micVol;
+        document.getElementById('as-mic-vol-label').textContent = appSettings.micVol + '%';
+        
+        document.getElementById('as-noise-sup').checked = appSettings.noiseSup;
+        document.getElementById('as-echo-canc').checked = appSettings.echoCanc;
+
+        document.getElementById('as-vol').value = appSettings.spkVol;
+        document.getElementById('as-vol-label').textContent = appSettings.spkVol + '%';
+        
         appSettingsModal.style.display = 'flex';
         initLucide();
+        
+        if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+        startMicTest();
+    }
+    
+    // Uygulama ayarları kapanınca testi durdur
+    const csBtn = appSettingsModal.querySelector('.close-modal');
+    if(csBtn) {
+        csBtn.addEventListener('click', stopMicTest);
+    }
+    appSettingsModal.addEventListener('click', e => {
+        if (e.target === appSettingsModal) stopMicTest();
+    });
+
+    // Kayıt işlemleri
+    async function reinitMic() {
+        if (rawLocalStream) rawLocalStream.getTracks().forEach(t => t.stop());
+        try {
+            localStream = await getMicStream();
+            if (isMuted) localStream.getAudioTracks().forEach(t => t.enabled = false);
+            // Mevcut aramalardaki ses tracklerini güncelle
+            Object.values(peers).forEach(call => {
+                if (!call.peerConnection) return;
+                const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
+                const newAudioTrack = localStream.getAudioTracks()[0];
+                if (sender && newAudioTrack) sender.replaceTrack(newAudioTrack).catch(()=>{});
+            });
+        } catch(e) {
+            showToast('Mikrofon ayarlanamadı', 'error');
+        }
     }
 
-    // Mikrofon değiştir
     document.getElementById('as-mic-select').addEventListener('change', async e => {
-        try {
-            const ns = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: e.target.value } } });
-            if (localStream) localStream.getTracks().forEach(t => t.stop());
-            localStream = ns;
-            showToast('Mikrofon değiştirildi');
-        } catch { showToast('Mikrofon değiştirilemedi', 'error'); }
+        appSettings.micId = e.target.value; saveSettings();
+        await reinitMic();
+        showToast('Mikrofon değiştirildi');
+    });
+
+    document.getElementById('as-mic-vol').addEventListener('input', e => {
+        const v = parseInt(e.target.value);
+        appSettings.micVol = v; saveSettings();
+        document.getElementById('as-mic-vol-label').textContent = v + '%';
+        if (micGainNode) micGainNode.gain.setValueAtTime(v / 100, audioContext.currentTime);
+    });
+
+    document.getElementById('as-noise-sup').addEventListener('change', async e => {
+        appSettings.noiseSup = e.target.checked; saveSettings();
+        await reinitMic();
+        showToast(appSettings.noiseSup ? 'Gürültü önleme devrede' : 'Gürültü önleme kapalı');
+    });
+
+    document.getElementById('as-echo-canc').addEventListener('change', async e => {
+        appSettings.echoCanc = e.target.checked; saveSettings();
+        await reinitMic();
+        showToast(appSettings.echoCanc ? 'Yankı önleme devrede' : 'Yankı önleme kapalı');
+    });
+
+    document.getElementById('as-spk-select').addEventListener('change', e => {
+        appSettings.spkId = e.target.value; saveSettings();
+        const outputId = appSettings.spkId === 'default' ? '' : appSettings.spkId;
+        // Tüm ses etiketlerine uygula
+        document.querySelectorAll('audio, video').forEach(el => {
+            if (typeof el.setSinkId !== 'undefined') el.setSinkId(outputId).catch(()=>{});
+        });
+        showToast('Hoparlör değiştirildi');
     });
 
     // Ses seviyesi
     document.getElementById('as-vol').addEventListener('input', e => {
-        const v = e.target.value / 100;
-        document.querySelectorAll('.voice-card audio').forEach(a => {
-            if (a.closest('[data-peer-id]')?.dataset.peerId !== myPeer?.id) a.volume = v;
+        const v = parseInt(e.target.value);
+        appSettings.spkVol = v; saveSettings();
+        document.getElementById('as-vol-label').textContent = v + '%';
+        document.querySelectorAll('.voice-card audio, .voice-card video').forEach(media => {
+            if (media.closest('[data-peer-id]')?.dataset.peerId !== myPeer?.id) {
+                media.volume = v / 100;
+            }
         });
-        document.getElementById('as-vol-label').textContent = e.target.value + '%';
     });
 
     // Bağlantı hız testi
@@ -1016,13 +1178,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const ms = Date.now() - t;
             res.textContent = `Gecikme: ${ms}ms ${ms<100?'🟢 Mükemmel':ms<300?'🟡 İyi':'🔴 Yavaş'}`;
         } catch { res.textContent = 'Test başarısız!'; }
-    });
-
-    // Tema
-    document.getElementById('as-theme-toggle').addEventListener('click', () => {
-        const light = document.body.classList.toggle('theme-light');
-        document.getElementById('as-theme-toggle').textContent = light ? '🌙 Koyu Moda Geç' : '☀️ Açık Moda Geç';
-        showToast(light ? 'Açık tema' : 'Koyu tema');
     });
 
     // Ayarlardan çıkış
