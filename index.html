@@ -213,7 +213,7 @@
         <div class="modal-icon"><i data-lucide="server"></i></div>
         <h2>Sunucu Oluştur</h2>
         <p class="modal-sub">Sunucuna bir isim ver.</p>
-        <input type="text" id="new-server-name" placeholder="Benim Sunucum" class="glass-input">
+        <input type="text" id="new-server-name" placeholder="Benim Sunucum" class="glass-input" maxlength="20">
         <div class="modal-actions">
             <button class="close-modal secondary-btn">İptal</button>
             <button class="primary-btn" id="confirm-create-server">Oluştur</button>
@@ -261,9 +261,6 @@
         <div style="margin: 20px 0; text-align: left;">
             <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Sunucu Adı</label>
             <input type="text" id="edit-server-name" class="glass-input" style="width:100%; margin-bottom:15px;">
-            
-            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Sunucu Resmi (URL)</label>
-            <input type="text" id="edit-server-avatar" class="glass-input" placeholder="Boş bırakırsanız varsayılan atanır..." style="width:100%;">
         </div>
         
         <div class="modal-actions" style="margin-top: 25px; display:flex; gap:10px;">
@@ -373,6 +370,38 @@
     </div>
 </div>
 
+<!-- ═══ YENİ MODAL: Başka Kullanıcı Profil ═══ -->
+<div class="modal-overlay" id="member-profile-modal" style="display:none;">
+    <div class="modal-box glass-panel profile-panel-box">
+        <header class="pp-header">
+            <h2><i data-lucide="user" style="width:18px;height:18px;"></i> Kullanıcı Profili</h2>
+            <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
+        </header>
+
+        <div class="pp-profile-card">
+            <img id="mp-avatar" src="" alt="" class="pp-avatar">
+            <div>
+                <div id="mp-username" class="pp-uname">Kullanıcı</div>
+                <div class="pp-since">Nexus üyesi</div>
+            </div>
+        </div>
+
+        <div class="pp-section" style="display:flex; flex-direction:column; gap:8px;">
+            <button class="primary-btn full-width" id="mp-add-friend-btn">
+                <i data-lucide="user-plus"></i> Arkadaşlık Gönder
+            </button>
+            <button class="secondary-btn full-width" id="mp-mutual-friends-btn" style="justify-content:space-between;">
+                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="users"></i> Ortak Arkadaşlar</span>
+                <i data-lucide="chevron-right" style="width:14px; opacity:0.5;"></i>
+            </button>
+            <button class="secondary-btn full-width" id="mp-mutual-servers-btn" style="justify-content:space-between;">
+                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="server"></i> Ortak Sunucular</span>
+                <i data-lucide="chevron-right" style="width:14px; opacity:0.5;"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- ═══ MODAL: Uygulama Ayarları ═══ -->
 <div class="modal-overlay" id="app-settings-modal" style="display:none;">
     <div class="modal-box glass-panel settings-box">
@@ -445,11 +474,6 @@
             <div id="as-ping-result" style="font-size:12px;color:var(--text-secondary);padding:6px 0 0;"></div>
         </div>
 
-        <!-- Çıkış -->
-        <div class="settings-section">
-            <button id="as-logout-btn" class="logout-btn">
-                <i data-lucide="log-out"></i> Çıkış Yap
-            </button>
         </div>
     </div>
 </div>
@@ -459,9 +483,9 @@
     <div class="voice-card" data-peer-id="">
         <div class="avatar-ring">
             <div class="avatar-circle"></div>
-            <audio autoplay></audio>
-            <video class="screen-view" autoplay playsinline style="display:none;"></video>
         </div>
+        <audio autoplay></audio>
+        <video class="screen-view" autoplay playsinline style="display:none;"></video>
         <span class="user-label">Kullanıcı</span>
     </div>
 </template>

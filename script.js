@@ -469,7 +469,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const li = document.createElement('li');
                 li.className = `ch-item ${currentChannelId===ch.id?'active':''} ${currentChannelId===ch.id&&ch.type==='voice'?'voice-active':''}`;
                 li.dataset.type = ch.type;
-                li.innerHTML = `<i data-lucide="volume-2"></i><span style="flex:1;">${esc(ch.name)}</span> ${ch.limit ? `<span style="font-size:10px; color:var(--text-secondary);">` + (ch.users ? ch.users.length : 0) + `/` + ch.limit + `</span>` : ''}`;
+                const userCount = ch.users ? ch.users.length : 0;
+                li.innerHTML = `<i data-lucide="volume-2"></i><span style="flex:1;">${esc(ch.name)}</span> <span style="font-size:10px; color:var(--text-secondary); font-weight:700;">${userCount}${ch.limit ? '/' + ch.limit : ' kişi'}</span>`;
                 li.addEventListener('click', () => joinChannel(server.id, ch));
                 dynamicChannelList.appendChild(li);
             });
@@ -594,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 deviceId: appSettings.micId !== 'default' ? { exact: appSettings.micId } : undefined,
                 noiseSuppression: appSettings.noiseSup,
                 echoCancellation: appSettings.echoCanc,
-                autoGainControl: true
+                autoGainControl: false
             },
             video: false
         };
@@ -632,7 +633,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(stream => {
                 localStream = stream;
                 myPeer.on('call', call => {
-                    call.answer(isScreenSharing && screenStream ? screenStream : localStream);
+                    let tracks = [];
+                    if (localStream) tracks.push(...localStream.getAudioTracks());
+                    if (isScreenSharing && screenStream) tracks.push(...screenStream.getTracks());
+                    call.answer(new MediaStream(tracks));
                     call.on('stream', us => handleRemoteStream(call.peer, us));
                     peers[call.peer] = call;
                 });
@@ -738,11 +742,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.querySelector(`[data-peer-id="${peerId}"]`);
         if (!card) return;
         const audio = card.querySelector('audio');
-        if (audio) audio.srcObject = stream;
+        if (audio) {
+            audio.srcObject = stream;
+            if (peerId === myPeer?.id) audio.muted = true;
+        }
         const video = card.querySelector('video');
         if (video) {
-            if (stream.getVideoTracks().length > 0) { video.srcObject = stream; video.style.display = 'block'; }
-            else video.style.display = 'none';
+            if (stream.getVideoTracks().length > 0) { 
+                video.srcObject = stream; 
+                video.style.display = 'block'; 
+                card.classList.add('is-sharing-screen');
+                if (peerId === myPeer?.id) video.muted = true; 
+            }
+            else {
+                video.style.display = 'none';
+                card.classList.remove('is-sharing-screen');
+            }
+        }
+        
+        // Konuşma animasyonu için analyser ekle
+        if (stream.getAudioTracks().length > 0 && audioContext) {
+            if (!card.lastTrackId || card.lastTrackId !== stream.getAudioTracks()[0].id) {
+                try {
+                    const src = audioContext.createMediaStreamSource(stream);
+                    const an = audioContext.createAnalyser();
+                    an.fftSize = 256;
+                    src.connect(an);
+                    card.analyser = an;
+                    card.lastTrackId = stream.getAudioTracks()[0].id;
+                } catch(e) {}
+            }
         }
     }
 
@@ -759,6 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function leaveVoice(notify = true) {
+        if (isScreenSharing) stopScreenShare();
         if (notify && currentChannelId && currentChannelType === 'voice')
             socket.emit('leave-channel', currentChannelId, myPeer?.id);
         Object.values(peers).forEach(c => c.close()); peers = {};
@@ -853,6 +883,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="member-name" style="${m.isOnline?'':'opacity:.5;'}">${esc(m.username)}${m.isOwner?' 👑':''}</span>
                         <span class="member-st" style="color:${dotColor};">${STATUS_LABEL[m.status]||'Çevrimdışı'}</span>
                     </div>`;
+                row.addEventListener('click', () => {
+                    if (m.id !== currentUser.id) openMemberProfile(m);
+                });
                 membersList.appendChild(row);
             });
         }
@@ -1349,13 +1382,28 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isScreenSharing) {
                 screenStream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
                 isScreenSharing = true; screenShareBtn.classList.add('btn-active');
+                
                 const myCard = document.querySelector(`[data-peer-id="${myPeer?.id}"]`);
-                if (myCard) { const v=myCard.querySelector('video'); v.srcObject=screenStream; v.style.display='block'; }
-                Object.values(peers).forEach(call => {
-                    const vt = screenStream.getVideoTracks()[0];
-                    const s  = call.peerConnection?.getSenders().find(s=>s.track?.kind==='video');
-                    if (s && vt) s.replaceTrack(vt).catch(()=>{});
+                if (myCard) { 
+                    const v=myCard.querySelector('video'); 
+                    v.srcObject=screenStream; 
+                    v.style.display='block'; 
+                    v.muted=true;
+                    myCard.classList.add('is-sharing-screen'); 
+                }
+                
+                const mixedTracks = [];
+                if (localStream) mixedTracks.push(...localStream.getAudioTracks());
+                if (screenStream) mixedTracks.push(...screenStream.getTracks());
+                const mixedStream = new MediaStream(mixedTracks);
+
+                Object.keys(peers).forEach(peerId => {
+                    if (peers[peerId]) peers[peerId].close();
+                    const newCall = myPeer.call(peerId, mixedStream);
+                    newCall.on('stream', us => handleRemoteStream(peerId, us));
+                    peers[peerId] = newCall;
                 });
+                
                 screenStream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
                 showToast('Ekran paylaşımı başladı');
             } else stopScreenShare();
@@ -1365,8 +1413,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopScreenShare() {
         screenStream?.getTracks().forEach(t=>t.stop());
         isScreenSharing = false; screenShareBtn.classList.remove('btn-active');
-        document.querySelector(`[data-peer-id="${myPeer?.id}"]`)?.querySelector('video')?.style.setProperty('display','none');
+        
+        const myCard = document.querySelector(`[data-peer-id="${myPeer?.id}"]`);
+        if (myCard) {
+            myCard.querySelector('video').style.display='none';
+            myCard.classList.remove('is-sharing-screen');
+        }
+        
         showToast('Ekran paylaşımı durduruldu');
+        
+        Object.keys(peers).forEach(peerId => {
+            if (peers[peerId]) peers[peerId].close();
+            const newCall = myPeer.call(peerId, localStream);
+            newCall.on('stream', us => handleRemoteStream(peerId, us));
+            peers[peerId] = newCall;
+        });
     }
 
     disconnectBtn.addEventListener('click', () => leaveVoice(true));
@@ -1506,4 +1567,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── İLK TOOLTIP BAĞLAMA ───────────────────────────────────────────
     setTimeout(attachTooltips, 500);
+
+    // ── KULLANICI / ÜYE PROFİL PANELİ (SUNUCU İÇİ) ───────────────────
+    const memberProfileModal = document.getElementById('member-profile-modal');
+    window.openMemberProfile = function(user) {
+        document.getElementById('mp-avatar').src = user.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${esc(user.username)}`;
+        document.getElementById('mp-username').textContent = user.username;
+        
+        const isFriend = friends.find(f => f.id === user.id);
+        const addBtn = document.getElementById('mp-add-friend-btn');
+        if (isFriend) {
+            addBtn.innerHTML = `<i data-lucide="message-square"></i> Mesaj Gönder`;
+            addBtn.onclick = () => {
+                memberProfileModal.style.display = 'none';
+                document.getElementById('nav-friends').click();
+                showFriendProfile(isFriend);
+            };
+        } else {
+            addBtn.innerHTML = `<i data-lucide="user-plus"></i> Arkadaşlık İsteği Gönder`;
+            addBtn.onclick = () => {
+                socket.emit('send-friend-request', user.username, res => {
+                    showToast(res.message, res.success ? 'success' : 'error');
+                });
+            };
+        }
+        
+        document.getElementById('mp-mutual-friends-btn').onclick = () => showToast('Ortak arkadaşlar yakında eklenecek', 'info');
+        document.getElementById('mp-mutual-servers-btn').onclick = () => showToast('Ortak sunucular yakında eklenecek', 'info');
+        
+        memberProfileModal.style.display = 'flex';
+        initLucide();
+    };
+
+    // ── KONUŞMA ANİMASYONU ──────────────────────────────────────────
+    function updateSpeakingAnimations() {
+        if (document.getElementById('voice-grid').style.display !== 'none') {
+            const dataArray = new Uint8Array(256);
+            document.querySelectorAll('.voice-card').forEach(card => {
+                let isSpeaking = false;
+                
+                if (card.getAttribute('data-peer-id') === myPeer?.id) {
+                    if (window.micAnalyser && !isMuted) {
+                        window.micAnalyser.getByteFrequencyData(dataArray);
+                        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+                        if (avg > 15) isSpeaking = true;
+                    }
+                } else if (card.analyser) {
+                    card.analyser.getByteFrequencyData(dataArray);
+                    const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+                    if (avg > 15) isSpeaking = true;
+                }
+
+                if (isSpeaking) {
+                    card.classList.add('is-speaking');
+                } else {
+                    card.classList.remove('is-speaking');
+                }
+            });
+        }
+        requestAnimationFrame(updateSpeakingAnimations);
+    }
+    updateSpeakingAnimations();
 });

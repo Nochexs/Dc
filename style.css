@@ -298,7 +298,7 @@ body {
 .ch-section-header {
     font-size: 10px; font-weight: 800; color: var(--text-secondary);
     letter-spacing: 1.1px; padding: 10px 8px 4px;
-    pointer-events: none; text-transform: uppercase;
+    text-transform: uppercase;
     list-style: none;
 }
 
@@ -473,9 +473,51 @@ body {
     background-size: cover; background-position: center;
     background-color: rgba(139,92,246,.2);
     border: 2px solid var(--glass-border);
+    transition: all 0.15s ease;
 }
 .screen-view { position: absolute; inset: 0; border-radius: 10px; object-fit: contain; background: #000; }
 .user-label { font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: center; }
+
+/* Ekran Paylaşımı Aktifken Tasarım */
+.voice-card.is-sharing-screen {
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    min-height: 480px;
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+}
+.voice-card.is-sharing-screen .avatar-ring {
+    position: absolute;
+    bottom: 16px; left: 16px;
+    width: 44px; height: 44px;
+    z-index: 2;
+}
+.voice-card.is-sharing-screen .avatar-circle {
+    width: 44px; height: 44px;
+}
+.voice-card.is-sharing-screen .screen-view {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    border-radius: 0;
+}
+.voice-card.is-sharing-screen .user-label {
+    position: absolute;
+    bottom: 26px; left: 72px;
+    z-index: 2;
+    background: rgba(0,0,0,0.7);
+    padding: 6px 10px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+/* Konuşma Animasyonu */
+.voice-card.is-speaking .avatar-circle {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.6);
+    transform: scale(1.08);
+}
 
 /* ════ MEMBERS PANEL ════ */
 .members-panel {
