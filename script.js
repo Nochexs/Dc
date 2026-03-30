@@ -457,27 +457,60 @@ document.addEventListener('DOMContentLoaded', () => {
             hdr.style.display = 'flex';
             hdr.style.justifyContent = 'space-between';
             hdr.style.alignItems = 'center';
-            hdr.innerHTML = `<span>SES KANALLARI</span> <button id="add-voice-ch-btn" class="icon-btn-small" style="background:transparent; padding:2px;"><i data-lucide="plus" style="width:14px;height:14px;"></i></button>`;
+            
+            // Eğer sunucu sahibiysek "Artı" butonu görünsün
+            const isOwner = server.ownerId === currentUser.id;
+            hdr.innerHTML = `<span>SES KANALLARI</span> ${isOwner ? `<button id="add-voice-ch-btn" class="icon-btn-small" style="background:transparent; padding:2px;"><i data-lucide="plus" style="width:14px;height:14px;"></i></button>` : ''}`;
             dynamicChannelList.appendChild(hdr);
             
-            hdr.querySelector('#add-voice-ch-btn').addEventListener('click', () => {
-                document.getElementById('create-voice-modal').style.display = 'flex';
-                document.getElementById('new-voice-name').value = '';
-                document.getElementById('new-voice-limit').value = '';
-            });
+            if (isOwner) {
+                hdr.querySelector('#add-voice-ch-btn').addEventListener('click', () => {
+                    document.getElementById('create-voice-modal').style.display = 'flex';
+                    document.getElementById('new-voice-name').value = '';
+                    document.getElementById('new-voice-limit').value = '';
+                });
+            }
 
             voiceChs.forEach(ch => {
                 const li = document.createElement('li');
                 li.className = `ch-item ${currentChannelId===ch.id?'active':''} ${currentChannelId===ch.id&&ch.type==='voice'?'voice-active':''}`;
                 li.dataset.type = ch.type;
+                li.dataset.id = ch.id;
                 const userCount = ch.users ? ch.users.length : 0;
                 li.innerHTML = `<i data-lucide="volume-2"></i><span style="flex:1;">${esc(ch.name)}</span> <span style="font-size:10px; color:var(--text-secondary); font-weight:700;">${userCount}${ch.limit ? '/' + ch.limit : ' kişi'}</span>`;
+                
                 li.addEventListener('click', () => joinChannel(server.id, ch));
+                
+                // Sağ tık (Context Menu) sadece sahibine
+                if (isOwner) {
+                    li.addEventListener('contextmenu', e => {
+                        e.preventDefault();
+                        showContextMenu(e.clientX, e.clientY, ch.id, ch.name, ch.limit);
+                    });
+                }
+                
                 dynamicChannelList.appendChild(li);
             });
         }
         initLucide();
     }
+
+    let activeContextChannelId = null;
+    function showContextMenu(x, y, chId, name, limit) {
+        activeContextChannelId = chId;
+        const menu = document.getElementById('context-menu');
+        menu.style.display = 'block';
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        
+        // Modal için verileri hazırla
+        document.getElementById('edit-ch-name').value = name;
+        document.getElementById('edit-ch-limit').value = limit || 0;
+        
+        const hide = () => { menu.style.display = 'none'; document.removeEventListener('click', hide); };
+        setTimeout(() => document.addEventListener('click', hide), 50);
+    }
+
 
     // ── ARKADAŞ PROFİL GÖRÜNÜMÜ (MERKEZ) ─────────────────────────────
     function showFriendProfile(friend) {
@@ -536,10 +569,12 @@ document.addEventListener('DOMContentLoaded', () => {
         initLucide(); attachTooltips();
 
         document.getElementById('fpv-call-btn').addEventListener('click', () => {
-            if (currentChannelId) leaveVoice(false);
-            joinVoice('dm_' + friend.id);
-            showToast(friend.username + ' ile sesli bağlantı kuruluyor...', 'info');
+            showToast(friend.username + ' aranıyor...', 'info');
+            socket.emit('dm-call-request', friend.id, res => {
+                if (!res.success) showToast(res.message || 'Arama başarısız.', 'error');
+            });
         });
+
         document.getElementById('fpv-copy-btn').addEventListener('click', () => {
             navigator.clipboard.writeText(friend.username).then(() => showToast(`"${friend.username}" kopyalandı!`));
         });
@@ -989,6 +1024,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    socket.on('server-updated', updatedServer => {
+        const idx = servers.findIndex(s => s.id === updatedServer.id);
+        if (idx !== -1) {
+            servers[idx] = updatedServer;
+            if (currentServerId === updatedServer.id) {
+                mainHeaderTitle.textContent = updatedServer.name;
+                sidebarCtxTitle.textContent = updatedServer.name.toUpperCase();
+                renderSidebar();
+            }
+            renderServerList();
+        }
+    });
+
+    // ── SESLİ ARAMA LOGİC (DM) ──────────────────────────────────────
+    const incomingCallModal = document.getElementById('incoming-call-modal');
+    let activeIncomingCallFrom = null;
+
+    socket.on('incoming-call', d => {
+        activeIncomingCallFrom = d.fromId;
+        document.getElementById('inc-call-name').textContent = d.fromName;
+        document.getElementById('inc-call-avatar').src = d.fromPic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${esc(d.fromName)}`;
+        incomingCallModal.style.display = 'flex';
+        // Opsiyonel: Zil sesi çalınabilir
+    });
+
+    socket.on('call-response', d => {
+        if (d.accepted) {
+            if (currentChannelId) leaveVoice(false);
+            joinVoice('dm_' + d.fromId);
+            showToast('Arama kabul edildi, bağlanılıyor...', 'success');
+        } else {
+            showToast('Arama reddedildi.', 'error');
+        }
+    });
+
+    document.getElementById('btn-accept-call')?.addEventListener('click', () => {
+        if (!activeIncomingCallFrom) return;
+        socket.emit('dm-call-response', { toId: activeIncomingCallFrom, accepted: true });
+        incomingCallModal.style.display = 'none';
+        
+        // Önce temizle sonra bağlan
+        if (currentChannelId) leaveVoice(false);
+        joinVoice('dm_' + activeIncomingCallFrom);
+        activeIncomingCallFrom = null;
+    });
+
+    document.getElementById('btn-decline-call')?.addEventListener('click', () => {
+        if (!activeIncomingCallFrom) return;
+        socket.emit('dm-call-response', { toId: activeIncomingCallFrom, accepted: false });
+        incomingCallModal.style.display = 'none';
+        activeIncomingCallFrom = null;
+    });
+
+
     // ── BİLDİRİM PANELİ ──────────────────────────────────────────────
     socket.on('receive-friend-request', req => {
         pendingRequests.push(req);
@@ -1243,6 +1332,10 @@ document.addEventListener('DOMContentLoaded', () => {
         leaveVoice(true);
         profilePanel.style.display = 'none';
         appSettingsModal.style.display = 'none';
+        document.getElementById('server-settings-modal').style.display = 'none';
+        document.getElementById('incoming-call-modal').style.display = 'none';
+        document.getElementById('edit-channel-modal').style.display = 'none';
+        
         currentUser = null; friends = []; servers = []; pendingRequests = [];
         onlineFriends = new Set(); dmNotifications = new Map();
         currentContext = 'friends'; currentChannelId = null; currentServerId = null;
@@ -1251,6 +1344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         authUsernameInput.value = ''; authPasswordInput.value = ''; authError.textContent = '';
         socket.disconnect(); socket.connect();
     }
+
 
     // ── UYGULAMA AYARLARI ─────────────────────────────────────────────
     document.getElementById('open-settings-btn').addEventListener('click', openAppSettings);
@@ -1426,7 +1520,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── SES KONTROLLERI ───────────────────────────────────────────────
     micBtn.addEventListener('click', () => {
         isMuted = !isMuted;
-        if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+        if (localStream) {
+            localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+        }
         micBtn.classList.toggle('leave-btn', isMuted);
         micBtn.innerHTML = `<i data-lucide="${isMuted?'mic-off':'mic'}"></i>`;
         initLucide();
@@ -1435,14 +1531,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     deafenBtn.addEventListener('click', () => {
         isDeafened = !isDeafened;
-        document.querySelectorAll('.voice-card audio').forEach(a => {
-            if (a.closest('[data-peer-id]')?.dataset.peerId !== myPeer?.id) a.muted = isDeafened;
+        document.querySelectorAll('audio, video').forEach(media => {
+            if (media.closest('[data-peer-id]')?.dataset.peerId !== myPeer?.id) {
+                media.muted = isDeafened;
+            }
         });
         deafenBtn.classList.toggle('leave-btn', isDeafened);
         deafenBtn.innerHTML = `<i data-lucide="${isDeafened?'volume-x':'headphones'}"></i>`;
         initLucide();
         showToast(isDeafened ? 'Ses kapatıldı' : 'Ses açıldı');
     });
+
 
     screenShareBtn.addEventListener('click', async () => {
         try {
@@ -1591,12 +1690,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateProfileAvatar(url);
     });
 
-    document.getElementById('pp-save-avatar')?.addEventListener('click', () => {
-        const url = document.getElementById('pp-avatar-url').value.trim();
-        if (!url) return showToast('Geçerli bir URL girin', 'error');
-        updateProfileAvatar(url);
-    });
-
     function updateProfileAvatar(url) {
         socket.emit('update-profile', { profilePic: url }, res => {
             if (res.success) {
@@ -1609,6 +1702,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+
+    // ── KANAL AYARLARI KONTROLLERİ ──────────────────────────────
+    document.getElementById('ctx-edit-ch')?.addEventListener('click', () => {
+        document.getElementById('edit-channel-modal').style.display = 'flex';
+    });
+
+    document.getElementById('btn-save-channel-settings')?.addEventListener('click', () => {
+        if (!activeContextChannelId || !currentServerId) return;
+        const name = document.getElementById('edit-ch-name').value.trim();
+        const limit = document.getElementById('edit-ch-limit').value;
+        if (!name) return showToast('Kanal adı boş olamaz', 'error');
+
+        socket.emit('edit-channel', { serverId: currentServerId, channelId: activeContextChannelId, name, limit }, res => {
+            if (res.success) {
+                document.getElementById('edit-channel-modal').style.display = 'none';
+                showToast('Kanal güncellendi!');
+            } else showToast(res.message, 'error');
+        });
+    });
+
+    document.getElementById('ctx-delete-ch')?.addEventListener('click', () => {
+        if (!activeContextChannelId || !currentServerId) return;
+        if (confirm('Kanalı silmek istediğine emin misin?')) {
+            socket.emit('delete-channel', { serverId: currentServerId, channelId: activeContextChannelId }, res => {
+                if (res.success) {
+                    showToast('Kanal silindi.', 'error');
+                    if (currentChannelId === activeContextChannelId) leaveVoice(false);
+                } else showToast(res.message, 'error');
+            });
+        }
+    });
+
+    document.getElementById('btn-delete-channel')?.addEventListener('click', () => {
+        document.getElementById('ctx-delete-ch').click();
+        document.getElementById('edit-channel-modal').style.display = 'none';
+    });
+
     document.getElementById('pp-delete-account-btn')?.addEventListener('click', () => {
         if (confirm('DİKKAT: Hesabınız kalıcı olarak SİLİNECEKTİR. Emin misiniz?')) {
             socket.emit('delete-account', r => {
@@ -1620,6 +1750,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
 
     // Ses Kanalı Ekleme
     document.getElementById('confirm-create-voice')?.addEventListener('click', () => {

@@ -275,6 +275,28 @@
     </div>
 </div>
 
+<!-- ════ KANAL DÜZENLE MODALI ════ -->
+<div class="modal-overlay" id="edit-channel-modal" style="display:none;">
+    <div class="modal-box glass-panel" style="max-width: 400px; text-align: center;">
+        <div class="modal-header">
+            <h3>Kanalı Düzenle</h3>
+            <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
+        </div>
+        <div style="margin: 20px 0; text-align: left;">
+            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kanal Adı</label>
+            <input type="text" id="edit-ch-name" class="glass-input" style="width:100%; margin-bottom:15px;">
+            
+            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kullanıcı Limiti (0 = Sınırsız)</label>
+            <input type="number" id="edit-ch-limit" class="glass-input" style="width:100%;" min="0" max="99">
+        </div>
+        <div class="modal-actions" style="margin-top: 25px; display:flex; gap:10px;">
+            <button class="primary-btn danger" id="btn-delete-channel" style="flex:1; background:rgba(239,68,68,0.2) !important; color:var(--text-danger) !important;">Kanalı Sil</button>
+            <button class="primary-btn" id="btn-save-channel-settings" style="flex:2;">Degişiklikleri Kaydet</button>
+        </div>
+    </div>
+</div>
+
+
 <!-- ═══ YENİ MODAL: Ses Kanalı Oluştur ═══ -->
 <div class="modal-overlay" id="create-voice-modal" style="display:none;">
     <div class="modal-box glass-panel">
@@ -324,7 +346,7 @@
         <div class="pp-profile-card">
             <div style="position:relative;">
                 <img id="pp-avatar" src="" alt="" class="pp-avatar">
-                <button class="icon-btn-lite avatar-change-btn" id="pp-refresh-avatar" data-tooltip="Avatar Değiştir"
+                <button class="icon-btn-lite avatar-change-btn" id="pp-refresh-avatar" data-tooltip="Avatar Yenile"
                         style="position:absolute; bottom:0; right:0; padding:4px; border-radius:50%; background:var(--accent-purple); border:2px solid var(--app-bg);">
                     <i data-lucide="refresh-cw" style="width:12px; height:12px;"></i>
                 </button>
@@ -335,14 +357,6 @@
             </div>
         </div>
 
-        <!-- URL Avatar Seçeneği -->
-        <div class="pp-section">
-            <div class="pp-section-label">AVATAR URL (OPSİYONEL)</div>
-            <div class="pp-row">
-                <input type="text" id="pp-avatar-url" placeholder="https://..." class="glass-input">
-                <button class="primary-btn" id="pp-save-avatar">Kaydet</button>
-            </div>
-        </div>
 
         <!-- Durum -->
         <div class="pp-section">
@@ -522,9 +536,29 @@
         </div>
     </div>
 
+    <!-- ════ GELEN ARAMA EKRANI ════ -->
+    <div class="modal-overlay" id="incoming-call-modal" style="display:none; z-index: 10000;">
+        <div class="modal-box glass-panel" style="max-width: 320px; text-align: center; border: 2px solid var(--accent-purple); animation: callPulse 2s infinite;">
+            <img src="" id="inc-call-avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent-purple); margin-bottom: 15px;">
+            <h3 id="inc-call-name">Kullanıcı</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 25px;">Seni arıyor...</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="primary-btn danger-btn" id="btn-decline-call" style="flex:1; background: #ef4444 !important;"><i data-lucide="phone-off"></i> Reddet</button>
+                <button class="primary-btn" id="btn-accept-call" style="flex:1; background: #22c55e !important;"><i data-lucide="phone"></i> Kabul Et</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════ CONTEXT MENU (SAĞ TIK) ════ -->
+    <div id="context-menu" class="glass-panel" style="display:none; position:fixed; z-index:9999; min-width:160px; padding:6px; border-radius:8px; box-shadow:0 8px 16px rgba(0,0,0,0.5);">
+        <div class="ctx-item" id="ctx-edit-ch" style="padding:10px; cursor:pointer; color:var(--text-primary); display:flex; align-items:center; gap:8px; border-radius:4px;"><i data-lucide="settings" style="width:16px;"></i> Oda Ayarları</div>
+        <div class="ctx-item danger" id="ctx-delete-ch" style="padding:10px; cursor:pointer; color:var(--text-danger); display:flex; align-items:center; gap:8px; border-radius:4px;"><i data-lucide="trash-2" style="width:16px;"></i> Odayı Sil</div>
+    </div>
+
     <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
+
 

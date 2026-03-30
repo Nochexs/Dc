@@ -305,9 +305,41 @@ io.on('connection', (socket) => {
             limit: limit ? parseInt(limit, 10) : 0
         };
         srv.channels.push(newChannel);
-        socket.to(serverId).emit('channel-created', { serverId, channel: newChannel });
+        io.to(serverId).emit('server-updated', srv);
         cb({ success: true, channel: newChannel, server: srv });
     });
+
+    // SES KANALI DÜZENLE
+    socket.on('edit-channel', ({ serverId, channelId, name, limit }, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const srv = db.servers[serverId];
+        if (!srv) return cb({ success: false });
+        if (srv.ownerId !== uid) return cb({ success: false, message: 'Sadece kurucu düzenleyebilir.' });
+        
+        const ch = srv.channels.find(c => c.id === channelId);
+        if (!ch) return cb({ success: false });
+        
+        if (name && name.trim()) ch.name = name.trim().toLowerCase().replace(/\s+/g, '-');
+        ch.limit = limit != null ? parseInt(limit, 10) : 0;
+        
+        io.to(serverId).emit('server-updated', srv);
+        cb({ success: true, server: srv });
+    });
+
+    // SES KANALI SİL
+    socket.on('delete-channel', ({ serverId, channelId }, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const srv = db.servers[serverId];
+        if (!srv) return cb({ success: false });
+        if (srv.ownerId !== uid) return cb({ success: false, message: 'Sadece kurucu silebilir.' });
+        
+        srv.channels = srv.channels.filter(c => c.id !== channelId);
+        io.to(serverId).emit('server-updated', srv);
+        cb({ success: true, server: srv });
+    });
+
 
     // SUNUCUYA KATIL
     socket.on('join-server', (serverId, cb) => {
@@ -448,6 +480,32 @@ io.on('connection', (socket) => {
             io.to(fs).emit('dm-notification', { fromId: uid, fromUsername: user.username });
         }
     });
+
+    // DM SESLİ ARAMA İSTEĞİ
+    socket.on('dm-call-request', (friendId, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const user = db.users[uid];
+        const fs = findSocket(friendId);
+        if (!fs) return cb({ success: false, message: 'Kullanıcı çevrimdışı.' });
+        
+        io.to(fs).emit('incoming-call', { 
+            fromId: uid, 
+            fromName: user.username, 
+            fromPic: user.profilePic 
+        });
+        cb({ success: true });
+    });
+
+    // DM ARAMA CEVABI (KABUL/RED)
+    socket.on('dm-call-response', ({ toId, accepted }, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return;
+        const fs = findSocket(toId);
+        if (fs) io.to(fs).emit('call-response', { fromId: uid, accepted });
+        if (cb) cb({ success: true });
+    });
+
 
     // BAĞLANTI KESİLDİ
     socket.on('disconnect', () => {
