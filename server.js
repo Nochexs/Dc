@@ -116,6 +116,10 @@ io.on('connection', (socket) => {
             user.password = newPassword.trim();
         }
 
+        if (profilePic && profilePic.trim()) {
+            user.profilePic = profilePic.trim();
+        }
+
         if (status && status !== user.status) {
             const wasInvisible = user.status === 'invisible';
             user.status = status;
@@ -137,7 +141,17 @@ io.on('connection', (socket) => {
         }
 
         cb({ success: true, user: { id: user.id, username: user.username, profilePic: user.profilePic, status: user.status } });
+        
+        // Diğerlerine de kullanıcı bilgisinin güncellendiğini bildir (örneğin PP değişince her yer güncellensin)
+        user.friends.forEach(fId => {
+            const fs = findSocket(fId);
+            if (fs) io.to(fs).emit('friend-update', { id: user.id, username: user.username, profilePic: user.profilePic });
+        });
+        user.servers.forEach(sId => {
+            socket.to(sId).emit('server-member-update', { id: user.id, username: user.username, profilePic: user.profilePic });
+        });
     });
+
 
     // HESAP SİL
     socket.on('delete-account', (cb) => {
@@ -286,8 +300,10 @@ io.on('connection', (socket) => {
         
         if (name && name.trim()) srv.name = name.trim();
         if (avatar && avatar.trim()) srv.avatar = avatar.trim();
+        io.to(serverId).emit('server-updated', srv);
         cb({ success: true, server: srv });
     });
+
 
     // SES KANALI OLUŞTUR
     socket.on('create-voice-channel', ({ serverId, name, limit }, cb) => {

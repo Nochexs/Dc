@@ -359,17 +359,17 @@ document.addEventListener('DOMContentLoaded', () => {
         currentContext = s.id; currentServerId = s.id;
         currentChannelType = null;
         
+        // Chat alanını MERKEZE al (rsPanel değil!)
         const chatArea = document.getElementById('center-chat-area');
-        const rsPanel = document.getElementById('right-side-panel');
-        if (rsPanel) {
-            rsPanel.style.display = 'flex';
-            rsPanel.appendChild(chatArea);
-        }
-        
+        document.querySelector('.view-container').appendChild(chatArea);
+
         const inviteBtn = document.getElementById('btn-invite-server');
         const settingsBtn = document.getElementById('btn-server-settings');
         if (inviteBtn) inviteBtn.style.display = '';
-        if (settingsBtn) settingsBtn.style.display = '';
+        if (settingsBtn) settingsBtn.style.display = (s.ownerId === currentUser.id ? '' : 'none');
+        
+        const rsPanel = document.getElementById('right-side-panel');
+        if (rsPanel) rsPanel.style.display = 'none'; // Sunucudayken arkadaş profili gizle
         
         chatMessages.innerHTML = ''; chatInput.disabled = true;
         friendProfileView.style.display = 'none';
@@ -377,10 +377,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (rightPanelTitle) rightPanelTitle.textContent = s.name + ' Sohbeti';
         welcomeMessage.style.display = 'none';
-        mainHeaderTitle.textContent = s ? s.name : 'Nexus';
+        mainHeaderTitle.textContent = s.name;
         mainHeaderIcon.setAttribute('data-lucide', 'server');
         toggleMembersBtn.style.display = '';
+        
         renderSidebar();
+
 
         if (membersOpen) {
             openMembersPanel(s.id);
@@ -416,11 +418,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentContext === 'friends') {
             sidebarCtxTitle.textContent = 'ARKADAŞLAR';
             btnAddFriend.style.display = '';
+            // ... (arkadaşlar listesi render)
             if (!friends.length) {
-                const li = document.createElement('li');
-                li.style.cssText = 'color:var(--text-secondary);font-size:12px;padding:20px 14px;opacity:.6;pointer-events:none;';
-                li.textContent = 'Henüz arkadaşın yok.';
-                dynamicChannelList.appendChild(li); return;
+                dynamicChannelList.innerHTML = '<li style="color:var(--text-secondary);font-size:12px;padding:20px 14px;opacity:.6;pointer-events:none;">Henüz arkadaşın yok.</li>';
+                return;
             }
             friends.forEach(f => {
                 const isOn = onlineFriends.has(f.id);
@@ -444,8 +445,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 dynamicChannelList.appendChild(li);
             });
         } else {
-            const server = servers.find(s => s.id === currentContext);
-            if (!server) return;
+            const server = servers.find(s => String(s.id) === String(currentContext));
+            if (!server) {
+                console.warn('Server bulunamadı:', currentContext);
+                sidebarCtxTitle.textContent = 'SUNUCU';
+                return;
+            }
             document.getElementById('leave-voice-btn').style.display = currentChannelType === 'voice' ? 'flex' : 'none';
             sidebarCtxTitle.textContent = server.name.toUpperCase();
             btnAddFriend.style.display = 'none'; 
@@ -519,11 +524,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isOn = onlineFriends.has(friend.id);
         
-        // Taşıma mantığı: DMs'de Chat merkeze!
+        // Chat alanını merkeze al
         const chatArea = document.getElementById('center-chat-area');
         document.querySelector('.view-container').appendChild(chatArea);
 
-        // Modal / Panelleri düzenle
         welcomeMessage.style.display = 'none';
         voiceGrid.style.display = 'none';
         document.getElementById('center-chat-area').style.display = 'flex';
@@ -532,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rsPanel) rsPanel.style.display = 'flex';
         friendProfileView.style.display = 'flex';
 
-        // Yeni buton listesi
+        // Profil görünümü (Arama butonu kaldırıldı!)
         friendProfileView.innerHTML = `
             <div class="fpv-content" style="flex:1; padding:20px;">
                 <div class="fpv-avatar-wrap">
@@ -545,9 +549,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${STATUS_LABEL[isOn?'online':'offline']}
                 </div>
                 <div class="fpv-actions" style="display:flex; flex-direction:column; gap:10px; width:100%;">
-                    <button class="primary-btn fpv-action-btn" id="fpv-call-btn" style="justify-content:center; padding:10px; border-radius:8px;">
-                        <i data-lucide="phone"></i> Arama Başlat
-                    </button>
                     <button class="secondary-btn fpv-action-btn danger" id="fpv-remove-btn" style="justify-content:center; padding:10px; border-radius:8px; background:rgba(239,68,68,0.1); color:var(--text-danger); border:1px solid rgba(239,68,68,0.2);">
                         <i data-lucide="user-x"></i> Arkadaşlıktan Sil
                     </button>
@@ -567,13 +568,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
 
         initLucide(); attachTooltips();
-
-        document.getElementById('fpv-call-btn').addEventListener('click', () => {
-            showToast(friend.username + ' aranıyor...', 'info');
-            socket.emit('dm-call-request', friend.id, res => {
-                if (!res.success) showToast(res.message || 'Arama başarısız.', 'error');
-            });
-        });
 
         document.getElementById('fpv-copy-btn').addEventListener('click', () => {
             navigator.clipboard.writeText(friend.username).then(() => showToast(`"${friend.username}" kopyalandı!`));
@@ -595,28 +589,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+        // Ortak arkadaş/sunucu eventleri (mevcut)
         document.getElementById('fpv-mutual-servers-btn').addEventListener('click', () => {
             socket.emit('get-mutual-details', friend.id, res => {
-                if (res.success && res.mutualServers.length > 0) {
-                    showMutualDetails('Ortak Sunucular', res.mutualServers);
-                } else {
-                    showToast('Ortak sunucu bulunamadı.', 'info');
-                }
+                if (res.success && res.mutualServers.length > 0) showMutualDetails('Ortak Sunucular', res.mutualServers);
+                else showToast('Ortak sunucu bulunamadı.', 'info');
             });
         });
         document.getElementById('fpv-mutual-friends-btn').addEventListener('click', () => {
             socket.emit('get-mutual-details', friend.id, res => {
-                if (res.success && res.mutualFriends.length > 0) {
-                    showMutualDetails('Ortak Arkadaşlar', res.mutualFriends);
-                } else {
-                    showToast('Ortak arkadaş bulunamadı.', 'info');
-                }
+                if (res.success && res.mutualFriends.length > 0) showMutualDetails('Ortak Arkadaşlar', res.mutualFriends);
+                else showToast('Ortak arkadaş bulunamadı.', 'info');
             });
         });
 
-        // DM chat'i merkez alana yükle
         openDMChat(friend);
     }
+
 
     function openDM(friend) {
         openDMChat(friend);
@@ -1322,19 +1311,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Çıkış yap (profil panelinden)
-    document.getElementById('pp-logout-btn').addEventListener('click', () => {
+    // Çıkış yap
+    document.getElementById('pp-logout-btn')?.addEventListener('click', () => {
         if (!confirm('Çıkış yapmak istediğine emin misin?')) return;
         doLogout();
+    });
+
+    // Hesabı sil
+    document.getElementById('pp-delete-account-btn').addEventListener('click', () => {
+        if (!confirm('HESABINI KALICI OLARAK SİLMEK İSTEDİĞİNE EMİN MİSİN?\nBu işlem geri alınamaz!')) return;
+        if (!confirm('GERÇEKTEN SİLİNSİN Mİ? Son kararınız mı?')) return;
+        
+        socket.emit('delete-account', res => {
+            if (res.success) {
+                showToast('Hesabın başarıyla silindi. Elveda...');
+                doLogout();
+            } else {
+                showToast(res.message || 'Hesap silme başarısız.', 'error');
+            }
+        });
     });
 
     function doLogout() {
         leaveVoice(true);
         profilePanel.style.display = 'none';
         appSettingsModal.style.display = 'none';
-        document.getElementById('server-settings-modal').style.display = 'none';
-        document.getElementById('incoming-call-modal').style.display = 'none';
-        document.getElementById('edit-channel-modal').style.display = 'none';
+        serverSettingsModal.style.display = 'none';
+        if (incomingCallModal) incomingCallModal.style.display = 'none';
+        if (document.getElementById('edit-channel-modal')) document.getElementById('edit-channel-modal').style.display = 'none';
         
         currentUser = null; friends = []; servers = []; pendingRequests = [];
         onlineFriends = new Set(); dmNotifications = new Map();
@@ -1627,8 +1631,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-server-settings')?.addEventListener('click', () => {
         const s = servers.find(svr => svr.id === currentServerId);
-        if (s) openServerSettings(s);
+        if (s) {
+            openServerSettings(s);
+        } else {
+            showToast('Sunucu bulunamadı.', 'error');
+        }
     });
+
+    // Sunucu ayarları kaydedildiğinde sidebar'ı güncellemek için global bir dinleyici
+    socket.off('server-updated').on('server-updated', items => {
+        const updatedServer = items;
+        const idx = servers.findIndex(s => s.id === updatedServer.id);
+        if (idx !== -1) {
+            servers[idx] = updatedServer;
+            if (currentServerId === updatedServer.id) {
+                mainHeaderTitle.textContent = updatedServer.name;
+                sidebarCtxTitle.textContent = updatedServer.name.toUpperCase();
+                renderSidebar();
+            }
+            renderServerList();
+        }
+    });
+
 
     // ── SUNUCU AYARLARI KONTROLLERİ ──────────────────────────────
     document.getElementById('btn-save-server-settings')?.addEventListener('click', () => {
@@ -1696,10 +1720,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUser.profilePic = url;
                 document.getElementById('pp-avatar').src = url;
                 myAvatarImg.src = url;
+                // Chat'teki kendi mesajlarındaki PP'leri de güncelle
+                document.querySelectorAll('.msg-avatar').forEach(img => {
+                   if (img.dataset.uid === currentUser.id) img.src = url;
+                });
                 showToast('Profil resmi güncellendi!');
             } else showToast(res.message, 'error');
         });
     }
+
 
 
 
