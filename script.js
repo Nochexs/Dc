@@ -609,6 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function getMicStream() {
+        if (localStream) return localStream;
         const constraints = {
             audio: {
                 deviceId: appSettings.micId !== 'default' ? { exact: appSettings.micId } : undefined,
@@ -635,7 +636,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const dest = audioContext.createMediaStreamDestination();
-        
         source.connect(micGainNode);
         micGainNode.connect(micAnalyser);
         micGainNode.connect(dest);
@@ -644,85 +644,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return dest.stream;
     }
 
+
     function initWebRTC() {
+        if (myPeer) return;
         myPeer = new Peer(undefined, { host:'0.peerjs.com', port:443, secure:true });
         myPeer.on('open', id => console.log('PeerJS:', id));
         myPeer.on('error', e => console.error('PeerJS:', e));
+        
+        myPeer.on('call', call => {
+            let tracks = [];
+            if (localStream) tracks.push(...localStream.getAudioTracks());
+            if (isScreenSharing && screenStream) tracks.push(...screenStream.getTracks());
+            call.answer(new MediaStream(tracks));
+            call.on('stream', us => handleRemoteStream(call.peer, us));
+            peers[call.peer] = call;
+        });
+
         getMicStream()
             .then(stream => {
                 localStream = stream;
-                myPeer.on('call', call => {
-                    let tracks = [];
-                    if (localStream) tracks.push(...localStream.getAudioTracks());
-                    if (isScreenSharing && screenStream) tracks.push(...screenStream.getTracks());
-                    call.answer(new MediaStream(tracks));
-                    call.on('stream', us => handleRemoteStream(call.peer, us));
-                    peers[call.peer] = call;
-                });
                 loadAudioDevices();
             }).catch(e => {
-                console.warn('Mikrofon:', e);
-                // Eğer ayarlanan mikrofon yoksa varsayılana dön
+                console.warn('Mikrofon erişim hatası:', e);
                 if(appSettings.micId !== 'default') {
                     appSettings.micId = 'default'; saveSettings();
-                    initWebRTC(); // Tekrar dene
                 }
             });
-    }
-
-    // ── MİKROFON ERİŞİMİ & ANALİZÖR ─────────────────────────────────
-    function getMicStream() {
-        return new Promise((resolve, reject) => {
-            const constraints = {
-                audio: {
-                    deviceId: appSettings.micId !== 'default' ? { exact: appSettings.micId } : undefined,
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: false
-                },
-                video: false
-            };
-            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-                try {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioContext.createMediaStreamSource(stream);
-                    
-                    // Mikrofon kalitesi ve analiz
-                    const gainNode = audioContext.createGain();
-                    gainNode.gain.value = 1.0; 
-                    
-                    window.micAnalyser = audioContext.createAnalyser();
-                    window.micAnalyser.fftSize = 512;
-                    window.micAnalyser.smoothingTimeConstant = 0.5;
-
-                    source.connect(gainNode);
-                    gainNode.connect(window.micAnalyser);
-                    
-                    requestAnimationFrame(updateSpeakingAnimations);
-                } catch(e) { console.warn("AudioContext başlatılamadı:", e); }
-                
-                resolve(stream);
-            }).catch(reject);
-        });
-    }
-
-    function updateSpeakingAnimations() {
-        if (!socket.connected || !window.micAnalyser) return;
-        requestAnimationFrame(updateSpeakingAnimations);
-        
-        const dataArray = new Uint8Array(window.micAnalyser.frequencyBinCount);
-        window.micAnalyser.getByteFrequencyData(dataArray);
-        
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        let average = sum / dataArray.length;
-
-        // VAD threshold
-        const el = document.querySelector(`.voice-card[data-peer="${myPeer?.id}"]`);
-        if (el && !isMuted) {
-            if (average > 10) el.classList.add('is-speaking');
-            else el.classList.remove('is-speaking');
-        }
     }
 
     async function loadAudioDevices() {
@@ -732,6 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
             audioOutputs = devs.filter(d => d.kind === 'audiooutput');
         } catch(e) {}
     }
+
 
     // ── KANALA KATIL ─────────────────────────────────────────────────
     function joinChannel(serverId, channel) {
@@ -783,16 +731,6 @@ document.addEventListener('DOMContentLoaded', () => {
         getMicStream()
             .then(stream => {
                 localStream = stream;
-                
-                myPeer.on('call', call => {
-                    let tracks = [];
-                    if (localStream) tracks.push(...localStream.getAudioTracks());
-                    if (isScreenSharing && screenStream) tracks.push(...screenStream.getTracks());
-                    call.answer(new MediaStream(tracks));
-                    call.on('stream', us => handleRemoteStream(call.peer, us));
-                    peers[call.peer] = call;
-                });
-
                 socket.emit('join-channel', { serverId: currentServerId, channelId: chId, peerId: myPeer.id }, res => {
                     if (res && !res.success) {
                         showToast(res.message || 'Kanala katılılamadı.', 'error');
@@ -1284,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!cp || !np || !cnp) { msg.style.color='var(--accent-red)'; msg.textContent='Tüm şifre alanlarını doldur.'; return; }
         if (np !== cnp) { msg.style.color='var(--accent-red)'; msg.textContent='Yeni şifreler eşleşmiyor.'; return; }
         if (np.length < 6) { msg.style.color='var(--accent-red)'; msg.textContent='Şifre en az 6 karakter olmalı.'; return; }
-        socket.emit('update-profile', { newPassword: np }, res => {
+        socket.emit('update-profile', { newPassword: np, currPassword: cp }, res => {
             if (res.success) {
                 msg.style.color='var(--accent-green)'; msg.textContent='Şifre güncellendi!';
                 document.getElementById('pp-current-pw').value='';
@@ -1593,63 +1531,83 @@ document.addEventListener('DOMContentLoaded', () => {
         if (s) openServerSettings(s);
     });
 
-    document.getElementById('btn-invite-server')?.addEventListener('click', () => {
-        if (!currentServerId) return;
-        const link = `${window.location.origin}/?invite=${currentServerId}`;
-        navigator.clipboard.writeText(link).then(() => showToast('Davet linki kopyalandı!'));
-    });
-
+    // ── SUNUCU AYARLARI KONTROLLERİ ──────────────────────────────
     document.getElementById('btn-save-server-settings')?.addEventListener('click', () => {
         if (!activeSettingsServerId) return;
-        const name = document.getElementById('edit-server-name').value;
-        const avatar = document.getElementById('edit-server-avatar').value;
-        socket.emit('edit-server', { serverId: activeSettingsServerId, name, avatar }, r => {
-            if (r.success) {
-                showToast('Sunucu güncellendi');
-                serverSettingsModal.style.display = 'none';
-                const s = servers.find(s => s.id === activeSettingsServerId);
-                if (s) { s.name = r.server.name; s.avatar = r.server.avatar; renderServerList(); }
-            } else showToast(r.message || 'Hata oluştu', 'error');
-        });
-    });
+        const name = document.getElementById('edit-server-name').value.trim();
+        const avatar = document.getElementById('edit-server-avatar').value.trim();
+        if (!name) return showToast('Sunucu adı boş olamaz', 'error');
 
-    document.getElementById('btn-leave-server')?.addEventListener('click', () => {
-        if (!activeSettingsServerId) return;
-        if (!confirm('Bu sunucudan ayrılmak istediğinize emin misiniz?')) return;
-        socket.emit('leave-server', activeSettingsServerId, r => {
-            if (r.success) {
-                showToast('Sunucudan ayrıldınız');
-                serverSettingsModal.style.display = 'none';
-                servers = servers.filter(s => s.id !== activeSettingsServerId);
+        socket.emit('edit-server', { serverId: activeSettingsServerId, name, avatar }, res => {
+            if (res.success) {
+                const s = servers.find(svr => svr.id === activeSettingsServerId);
+                if (s) { s.name = res.server.name; s.avatar = res.server.avatar; }
+                document.getElementById('server-settings-modal').style.display = 'none';
                 renderServerList();
-                document.getElementById('nav-friends').click(); 
-            } else showToast(r.message || 'Hata', 'error');
+                if (currentServerId === activeSettingsServerId) {
+                    mainHeaderTitle.textContent = res.server.name;
+                    sidebarCtxTitle.textContent = res.server.name.toUpperCase();
+                }
+                showToast('Sunucu ayarları güncellendi!');
+            } else showToast(res.message, 'error');
         });
     });
 
     document.getElementById('btn-delete-server')?.addEventListener('click', () => {
         if (!activeSettingsServerId) return;
-        if (!confirm('DİKKAT! Sunucu kalıcı olarak silinecek. Emin misiniz?')) return;
-        socket.emit('delete-server', activeSettingsServerId, r => {
-            if (r.success) {
-                showToast('Sunucu silindi');
-                serverSettingsModal.style.display = 'none';
-                servers = servers.filter(s => s.id !== activeSettingsServerId);
-                renderServerList();
-                document.getElementById('nav-friends').click();
-            } else showToast(r.message || 'Hata', 'error');
-        });
+        if (confirm('DİKKAT: Sunucu kalıcı olarak silinecek. Emin misin?')) {
+            socket.emit('delete-server', activeSettingsServerId, res => {
+                if (res.success) {
+                    servers = servers.filter(s => s.id !== activeSettingsServerId);
+                    document.getElementById('server-settings-modal').style.display = 'none';
+                    showToast('Sunucu silindi.', 'error');
+                    navFriends.click();
+                    renderServerList();
+                } else showToast(res.message, 'error');
+            });
+        }
     });
 
-    // Profil Avatar Güncelleme ve Hesap Silme
-    document.getElementById('pp-save-avatar')?.addEventListener('click', () => {
-        const url = document.getElementById('pp-avatar-url').value;
-        if (!url) return showToast('Açık bir URL girin', 'error');
-        currentUser.profilePic = url;
-        myAvatarImg.src = url;
-        document.getElementById('pp-avatar').src = url;
-        showToast('Profil resmi güncellendi (Yerel oturum)');
+    document.getElementById('btn-leave-server')?.addEventListener('click', () => {
+        if (!activeSettingsServerId) return;
+        if (confirm('Sunucudan ayrılmak istediğine emin misin?')) {
+            socket.emit('leave-server', activeSettingsServerId, res => {
+                if (res.success) {
+                    servers = servers.filter(s => s.id !== activeSettingsServerId);
+                    document.getElementById('server-settings-modal').style.display = 'none';
+                    showToast('Sunucudan ayrıldınız.');
+                    navFriends.click();
+                    renderServerList();
+                } else showToast(res.message, 'error');
+            });
+        }
     });
+
+
+    // ── PROFİL AVATAR GÜNCELLEME ────────────────────────────────────
+    document.getElementById('pp-refresh-avatar')?.addEventListener('click', () => {
+        const seed = Math.random().toString(36).substring(2, 10);
+        const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+        updateProfileAvatar(url);
+    });
+
+    document.getElementById('pp-save-avatar')?.addEventListener('click', () => {
+        const url = document.getElementById('pp-avatar-url').value.trim();
+        if (!url) return showToast('Geçerli bir URL girin', 'error');
+        updateProfileAvatar(url);
+    });
+
+    function updateProfileAvatar(url) {
+        socket.emit('update-profile', { profilePic: url }, res => {
+            if (res.success) {
+                currentUser.profilePic = url;
+                document.getElementById('pp-avatar').src = url;
+                myAvatarImg.src = url;
+                showToast('Profil resmi güncellendi!');
+            } else showToast(res.message, 'error');
+        });
+    }
+
 
     document.getElementById('pp-delete-account-btn')?.addEventListener('click', () => {
         if (confirm('DİKKAT: Hesabınız kalıcı olarak SİLİNECEKTİR. Emin misiniz?')) {

@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
     });
 
     // PROFİL GÜNCELLE
-    socket.on('update-profile', ({ newUsername, newPassword, status }, cb) => {
+    socket.on('update-profile', ({ newUsername, newPassword, currPassword, status }, cb) => {
         const uid = db.sessions[socket.id];
         if (!uid) return cb({ success: false, message: 'Giriş yapılmamış.' });
         const user = db.users[uid];
