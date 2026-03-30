@@ -446,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const server = servers.find(s => s.id === currentContext);
             if (!server) return;
+            document.getElementById('leave-voice-btn').style.display = currentChannelType === 'voice' ? 'flex' : 'none';
             sidebarCtxTitle.textContent = server.name.toUpperCase();
             btnAddFriend.style.display = 'none'; 
             const voiceChs = server.channels.filter(c => c.type === 'voice');
@@ -560,15 +561,22 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         document.getElementById('fpv-mutual-servers-btn').addEventListener('click', () => {
-            const mutual = servers.filter(s => s.members && s.members.find(m => m.id === friend.id));
-            if (mutual.length > 0) {
-                showToast('Ortak Sunucular: ' + mutual.map(s => s.name).join(', '), 'info');
-            } else {
-                showToast('Ortak sunucu bulunamadı.', 'info');
-            }
+            socket.emit('get-mutual-details', friend.id, res => {
+                if (res.success && res.mutualServers.length > 0) {
+                    showMutualDetails('Ortak Sunucular', res.mutualServers);
+                } else {
+                    showToast('Ortak sunucu bulunamadı.', 'info');
+                }
+            });
         });
         document.getElementById('fpv-mutual-friends-btn').addEventListener('click', () => {
-            showToast('Ortak arkadaş sistemi çok yakında eklenecek', 'info');
+            socket.emit('get-mutual-details', friend.id, res => {
+                if (res.success && res.mutualFriends.length > 0) {
+                    showMutualDetails('Ortak Arkadaşlar', res.mutualFriends);
+                } else {
+                    showToast('Ortak arkadaş bulunamadı.', 'info');
+                }
+            });
         });
 
         // DM chat'i merkez alana yükle
@@ -662,6 +670,61 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
+    // ── MİKROFON ERİŞİMİ & ANALİZÖR ─────────────────────────────────
+    function getMicStream() {
+        return new Promise((resolve, reject) => {
+            const constraints = {
+                audio: {
+                    deviceId: appSettings.micId !== 'default' ? { exact: appSettings.micId } : undefined,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: false
+                },
+                video: false
+            };
+            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    
+                    // Mikrofon kalitesi ve analiz
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = 1.0; 
+                    
+                    window.micAnalyser = audioContext.createAnalyser();
+                    window.micAnalyser.fftSize = 512;
+                    window.micAnalyser.smoothingTimeConstant = 0.5;
+
+                    source.connect(gainNode);
+                    gainNode.connect(window.micAnalyser);
+                    
+                    requestAnimationFrame(updateSpeakingAnimations);
+                } catch(e) { console.warn("AudioContext başlatılamadı:", e); }
+                
+                resolve(stream);
+            }).catch(reject);
+        });
+    }
+
+    function updateSpeakingAnimations() {
+        if (!socket.connected || !window.micAnalyser) return;
+        requestAnimationFrame(updateSpeakingAnimations);
+        
+        const dataArray = new Uint8Array(window.micAnalyser.frequencyBinCount);
+        window.micAnalyser.getByteFrequencyData(dataArray);
+        
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        let average = sum / dataArray.length;
+
+        // VAD threshold
+        const el = document.querySelector(`.voice-card[data-peer="${myPeer?.id}"]`);
+        if (el && !isMuted) {
+            if (average > 10) el.classList.add('is-speaking');
+            else el.classList.remove('is-speaking');
+        }
+    }
+
     async function loadAudioDevices() {
         try {
             const devs = await navigator.mediaDevices.enumerateDevices();
@@ -709,30 +772,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // SES KANALI
-        if (!myPeer?.id) { showToast('PeerJS henüz hazır değil...', 'error'); return; }
-        currentChannelId = channel.id; currentServerId = serverId; currentChannelType = 'voice';
-        currentDmFriend  = null;
-        renderSidebar();
-        
-        welcomeMessage.style.display  = 'none';
-        voiceGrid.style.display       = 'grid';
-        voiceGrid.innerHTML           = '';
-        voiceControls.style.display   = 'flex';
-        document.getElementById('active-voice-channel').textContent = channel.name;
-        addVoiceCard(myPeer.id, currentUser.username, true);
-
-        socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer.id }, res => {
-            if (!res) return;
-            (res.existingPeers || []).forEach(ep => {
-                addVoiceCard(ep.peerId, ep.username, false);
-                const st = isScreenSharing && screenStream ? screenStream : localStream;
-                if (st) {
-                    const call = myPeer.call(ep.peerId, st);
-                    if (call) { call.on('stream', us => handleRemoteStream(ep.peerId, us)); peers[ep.peerId] = call; }
-                }
-            });
-        });
+        joinVoice(channel.id);
     }
+
+    function joinVoice(chId) {
+        if (!myPeer || !socket.connected) return;
+        currentChannelId = chId; currentChannelType = 'voice';
+        renderSidebar(); showToast('Ses bağlantısı kuruluyor...', 'info');
+        
+        getMicStream()
+            .then(stream => {
+                localStream = stream;
+                
+                myPeer.on('call', call => {
+                    let tracks = [];
+                    if (localStream) tracks.push(...localStream.getAudioTracks());
+                    if (isScreenSharing && screenStream) tracks.push(...screenStream.getTracks());
+                    call.answer(new MediaStream(tracks));
+                    call.on('stream', us => handleRemoteStream(call.peer, us));
+                    peers[call.peer] = call;
+                });
+
+                socket.emit('join-channel', { serverId: currentServerId, channelId: chId, peerId: myPeer.id }, res => {
+                    if (res && !res.success) {
+                        showToast(res.message || 'Kanala katılılamadı.', 'error');
+                        leaveVoice(false);
+                        return;
+                    }
+                    voiceControls.style.display = 'flex';
+                    welcomeMessage.style.display = 'none';
+                    document.getElementById('center-chat-area').style.display = 'none';
+                    voiceGrid.style.display = 'grid';
+                    voiceGrid.innerHTML = '';
+                    
+                    addVoiceCard(myPeer.id, currentUser.username, true);
+                    if (res && res.existingPeers) {
+                        res.existingPeers.forEach(p => {
+                            addVoiceCard(p.peerId, p.username, false);
+                            const call = myPeer.call(p.peerId, localStream);
+                            if (call) { call.on('stream', us => handleRemoteStream(p.peerId, us)); peers[p.peerId] = call; }
+                        });
+                    }
+                });
+            })
+            .catch(e => {
+                showToast('Mikrofon erişimi engellendi!', 'error');
+                leaveVoice(false);
+            });
+    }
+
+    socket.on('channel-users-updated', (cId, userIds) => {
+        servers.forEach(s => {
+            const ch = s.channels.find(c => c.id === cId);
+            if (ch) ch.users = userIds; // Frontend'de cache'ini güncelle
+        });
+        if (currentServerId) renderSidebar();
+    });
 
     socket.on('user-connected', (peerId, username) => {
         if (currentChannelType !== 'voice') return;
@@ -813,6 +908,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── CHAT ─────────────────────────────────────────────────────────
+    // Ortak Bağlantılar Modal Fonksiyonları
+    window.showMutualDetails = function(title, list) {
+        document.getElementById('mutual-details-title').textContent = title;
+        const domList = document.getElementById('mutual-details-list');
+        domList.innerHTML = list.map(item => `
+            <div style="padding: 12px; background: rgba(255,255,255,.05); border-radius: 8px; border: 1px solid var(--glass-border); font-weight: 600;">
+                ${esc(item)}
+            </div>
+        `).join('');
+        document.getElementById('mutual-details-modal').style.display = 'flex';
+    };
+    window.closeMutualDetails = function() {
+        document.getElementById('mutual-details-modal').style.display = 'none';
+    };
+
+    function esc(s) {
+        const div = document.createElement('div');
+        div.textContent = s; return div.innerHTML;
+    }
+
     function appendMsg(sender, text, isSelf, pic, ts) {
         const div = document.createElement('div');
         div.className = `message ${isSelf ? 'self' : ''}`;
@@ -836,7 +951,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const s = servers.find(svr => svr.id === currentServerId);
             if (!s) return;
-            const textCh = s.channels.find(c => c.type === 'text');
+            const textCh = s.channels.find(c => c.id === currentChannelId);
             if (!textCh) return;
             socket.emit('send-chat-message', { channelId: textCh.id, serverId: currentServerId, text: val });
         }
@@ -1469,7 +1584,6 @@ document.addEventListener('DOMContentLoaded', () => {
         activeSettingsServerId = server.id;
         document.getElementById('settings-server-name-display').textContent = 'Ayarlar: ' + server.name;
         document.getElementById('edit-server-name').value = server.name;
-        document.getElementById('edit-server-avatar').value = server.avatar || '';
         
         serverSettingsModal.style.display = 'flex';
     };
@@ -1606,8 +1720,18 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
         
-        document.getElementById('mp-mutual-friends-btn').onclick = () => showToast('Ortak arkadaşlar yakında eklenecek', 'info');
-        document.getElementById('mp-mutual-servers-btn').onclick = () => showToast('Ortak sunucular yakında eklenecek', 'info');
+        document.getElementById('mp-mutual-friends-btn').onclick = () => {
+             socket.emit('get-mutual-details', user.id, res => {
+                 if (res.success && res.mutualFriends.length > 0) showMutualDetails('Ortak Arkadaşlar', res.mutualFriends);
+                 else showToast('Ortak arkadaş bulunamadı.', 'info');
+             });
+        };
+        document.getElementById('mp-mutual-servers-btn').onclick = () => {
+             socket.emit('get-mutual-details', user.id, res => {
+                 if (res.success && res.mutualServers.length > 0) showMutualDetails('Ortak Sunucular', res.mutualServers);
+                 else showToast('Ortak sunucu bulunamadı.', 'info');
+             });
+        };
         
         memberProfileModal.style.display = 'flex';
         initLucide();

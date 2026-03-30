@@ -488,11 +488,24 @@
         <video class="screen-view" autoplay playsinline style="display:none;"></video>
         <span class="user-label">Kullanıcı</span>
     </div>
-</template>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script src="/socket.io/socket.io.js"></script>
-<script src="script.js"></script>
-<script>lucide.createIcons();</script>
+    <!-- ════ MUTUAL DETAILS MODAL ════ -->
+    <div id="mutual-details-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <div class="hero-icon"><i data-lucide="users"></i></div>
+            </div>
+            <h2 id="mutual-details-title">Ortak Liste</h2>
+            <div id="mutual-details-list" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; padding: 10px; max-height: 250px; overflow-y: auto; text-align: left;">
+                <!-- items go here -->
+            </div>
+            <button class="settings-save-btn" style="margin-top: 20px; width: 100%;" onclick="closeMutualDetails()">Kapat</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -110,7 +110,11 @@ io.on('connection', (socket) => {
             if (taken) return cb({ success: false, message: 'Bu kullanıcı adı alınmış.' });
             user.username = newUsername.trim();
         }
-        if (newPassword && newPassword.trim()) user.password = newPassword.trim();
+        
+        if (newPassword && newPassword.trim()) {
+            if (user.password !== currPassword) return cb({ success: false, message: 'Mevcut şifreniz hatalı.' });
+            user.password = newPassword.trim();
+        }
 
         if (status && status !== user.status) {
             const wasInvisible = user.status === 'invisible';
@@ -195,6 +199,15 @@ io.on('connection', (socket) => {
         const fs = findSocket(fromId);
         if (fs) io.to(fs).emit('friend-added', { id: user.id, username: user.username, profilePic: user.profilePic });
         cb({ success: true, friend: { id: fromUser.id, username: fromUser.username, profilePic: fromUser.profilePic } });
+    });
+
+    // ARKADAŞ İSTEĞİNİ REDDET
+    socket.on('reject-friend-request', (fromId, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        // Sadece UID'nin alındığı requester havuzundan o ID'yi sil, listeye ekleme
+        db.friendRequests[uid] = (db.friendRequests[uid] || []).filter(r => r.fromId !== fromId);
+        cb({ success: true });
     });
 
     // ARKADAŞI KALDIR
@@ -337,6 +350,16 @@ io.on('connection', (socket) => {
         const uid = db.sessions[socket.id];
         if (!uid) return typeof cb === 'function' ? cb({ success: false }) : null;
         const user = db.users[uid];
+        const srv = db.servers[serverId];
+        const ch = srv?.channels.find(c => c.id === channelId);
+
+        // Limit Odatı Kontrolü (Sadece ses kanalları odaları limitlidir)
+        if (ch && ch.type === 'voice' && ch.limit > 0) {
+            const currentUsers = voiceRooms[channelId] ? voiceRooms[channelId].length : 0;
+            if (currentUsers >= ch.limit) {
+                return typeof cb === 'function' ? cb({ success: false, message: 'Kanal dolu!' }) : null;
+            }
+        }
 
         // Eski ses kanalından çık
         for (const cId in voiceRooms) {
@@ -346,6 +369,8 @@ io.on('connection', (socket) => {
                 voiceRooms[cId].splice(idx, 1);
                 socket.leave(cId);
                 socket.to(cId).emit('user-disconnected', pId);
+                // Sunucudakilere oda sayısının değiştiğini bildir
+                socket.to(serverId).emit('channel-users-updated', cId, voiceRooms[cId].map(u => u.userId));
                 break;
             }
         }
@@ -357,6 +382,10 @@ io.on('connection', (socket) => {
             const existing = voiceRooms[channelId].map(p => ({ peerId: p.peerId, username: p.username }));
             voiceRooms[channelId].push({ socketId: socket.id, userId: uid, peerId, username: user.username });
             socket.to(channelId).emit('user-connected', peerId, user.username);
+            
+            // Limit vs sayısı için odaya katılanın sayısı da gönderilsin
+            io.to(serverId).emit('channel-users-updated', channelId, voiceRooms[channelId].map(u => u.userId));
+            
             if (typeof cb === 'function') cb({ success: true, existingPeers: existing });
         } else {
             if (typeof cb === 'function') cb({ success: true, existingPeers: [] });
@@ -366,8 +395,16 @@ io.on('connection', (socket) => {
     // KANALDAN AYRIL
     socket.on('leave-channel', (channelId, peerId) => {
         socket.leave(channelId);
-        if (voiceRooms[channelId])
+        let srvId = null;
+        // Hangi sunucuya ait olduğunu bulmak için:
+        Object.values(db.servers).forEach(s => {
+            if (s.channels.find(c => c.id === channelId)) srvId = s.id;
+        });
+
+        if (voiceRooms[channelId]) {
             voiceRooms[channelId] = voiceRooms[channelId].filter(u => u.socketId !== socket.id);
+            if (srvId) io.to(srvId).emit('channel-users-updated', channelId, voiceRooms[channelId].map(u => u.userId));
+        }
         socket.to(channelId).emit('user-disconnected', peerId);
     });
 
@@ -432,10 +469,34 @@ io.on('connection', (socket) => {
             if (u) {
                 voiceRooms[cId] = voiceRooms[cId].filter(r => r.socketId !== socket.id);
                 socket.to(cId).emit('user-disconnected', u.peerId);
+                
+                let srvId = null;
+                Object.values(db.servers).forEach(s => {
+                    if (s.channels.find(c => c.id === cId)) srvId = s.id;
+                });
+                if (srvId) io.to(srvId).emit('channel-users-updated', cId, voiceRooms[cId].map(x => x.userId));
             }
         }
         delete db.sessions[socket.id];
         console.log(`[-] ${socket.id}`);
+    });
+    
+    // ORTAK ARKADAŞLAR/SUNUCULAR SORGUSU
+    socket.on('get-mutual-details', (targetId, cb) => {
+        const uid = db.sessions[socket.id];
+        if (!uid) return cb({ success: false });
+        const user = db.users[uid];
+        const target = db.users[targetId];
+        if (!user || !target) return cb({ success: false });
+
+        const mutualFriends = target.friends.filter(fid => user.friends.includes(fid)).map(fid => db.users[fid]?.username).filter(Boolean);
+        
+        let mutualServers = [];
+        Object.values(db.servers).forEach(s => {
+            if (s.members.includes(uid) && s.members.includes(targetId)) mutualServers.push(s.name);
+        });
+        
+        cb({ success: true, mutualFriends, mutualServers });
     });
 });
 

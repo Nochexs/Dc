@@ -435,12 +435,13 @@ body {
 /* ════ VOICE CONTROLS ════ */
 .voice-controls-panel {
     position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(10,5,20,.92);
+    background: rgba(10,5,20,.95);
     border: 1px solid var(--glass-border);
     border-radius: 16px; padding: 10px 18px;
     display: flex; align-items: center; gap: 18px;
     backdrop-filter: blur(20px);
-    z-index: 10;
+    z-index: 999;
+    pointer-events: auto;
     box-shadow: 0 8px 32px rgba(0,0,0,.4);
     min-width: 320px;
 }
