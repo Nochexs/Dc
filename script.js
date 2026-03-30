@@ -535,7 +535,9 @@ document.addEventListener('DOMContentLoaded', () => {
         initLucide(); attachTooltips();
 
         document.getElementById('fpv-call-btn').addEventListener('click', () => {
-            showToast('Arama özelliği yakında eklenecek!', 'info');
+            if (currentChannelId) leaveVoice(false);
+            joinVoice('dm_' + friend.id);
+            showToast(friend.username + ' ile sesli bağlantı kuruluyor...', 'info');
         });
         document.getElementById('fpv-copy-btn').addEventListener('click', () => {
             navigator.clipboard.writeText(friend.username).then(() => showToast(`"${friend.username}" kopyalandı!`));
@@ -557,8 +559,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-        document.getElementById('fpv-mutual-servers-btn').addEventListener('click', () => showToast('Ortak sunucular yakında', 'info'));
-        document.getElementById('fpv-mutual-friends-btn').addEventListener('click', () => showToast('Ortak arkadaşlar yakında', 'info'));
+        document.getElementById('fpv-mutual-servers-btn').addEventListener('click', () => {
+            const mutual = servers.filter(s => s.members && s.members.find(m => m.id === friend.id));
+            if (mutual.length > 0) {
+                showToast('Ortak Sunucular: ' + mutual.map(s => s.name).join(', '), 'info');
+            } else {
+                showToast('Ortak sunucu bulunamadı.', 'info');
+            }
+        });
+        document.getElementById('fpv-mutual-friends-btn').addEventListener('click', () => {
+            showToast('Ortak arkadaş sistemi çok yakında eklenecek', 'info');
+        });
 
         // DM chat'i merkez alana yükle
         openDMChat(friend);
@@ -761,8 +772,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Konuşma animasyonu için analyser ekle
-        if (stream.getAudioTracks().length > 0 && audioContext) {
-            if (!card.lastTrackId || card.lastTrackId !== stream.getAudioTracks()[0].id) {
+        if (stream.getAudioTracks().length > 0) {
+            if (!audioContext) {
+                try { audioContext = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+            }
+            if (audioContext && (!card.lastTrackId || card.lastTrackId !== stream.getAudioTracks()[0].id)) {
                 try {
                     const src = audioContext.createMediaStreamSource(stream);
                     const an = audioContext.createAnalyser();
@@ -1607,8 +1621,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 let isSpeaking = false;
                 
                 if (card.getAttribute('data-peer-id') === myPeer?.id) {
-                    if (window.micAnalyser && !isMuted) {
-                        window.micAnalyser.getByteFrequencyData(dataArray);
+                    if (micAnalyser && !isMuted) {
+                        micAnalyser.getByteFrequencyData(dataArray);
                         const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
                         if (avg > 15) isSpeaking = true;
                     }
