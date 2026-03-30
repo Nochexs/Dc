@@ -1092,6 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentUser.status = newStatus;
                     updateMyStatusDot();
                     showToast(`Durum: ${STATUS_LABEL[newStatus]}`);
+                    refreshMembersPanel();
                 }
             });
         });
