@@ -58,12 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastEl = document.getElementById('toast');
 
     // --- State ---
+<<<<<<< HEAD
     let socket = io(window.location.origin, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 10,
     });
+=======
+    let socket          = io('/');
+>>>>>>> parent of d55b9a7 (V5)
     let myPeer          = null;
     let currentUser     = null;
     let friends         = [];

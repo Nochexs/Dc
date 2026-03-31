@@ -6,6 +6,7 @@ const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
+<<<<<<< HEAD
 
 const io = new Server(server, {
     cors: { origin: '*', methods: ['GET', 'POST'] },
@@ -13,15 +14,22 @@ const io = new Server(server, {
     allowEIO3: true,
     pingTimeout: 60000,
     pingInterval: 25000,
+=======
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+>>>>>>> parent of d55b9a7 (V5)
 });
 
 app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(__dirname));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
+<<<<<<< HEAD
 // ---- In-Memory DB ----
 const generateId = () => Math.random().toString(36).substring(2, 10);
 
@@ -50,9 +58,34 @@ io.on('connection', (socket) => {
         const exists = Object.values(db.users).find(u => u.username.toLowerCase() === username.toLowerCase());
         if (exists) return callback({ success: false, message: 'Bu kullanıcı adı alınmış.' });
 
+=======
+// --- In-Memory Database ---
+const generateId = () => Math.random().toString(36).substring(2, 10);
+
+const db = {
+    users: {},     // userId -> { id, username, password, profilePic, friends: [], servers: [] }
+    servers: {},   // serverId -> { id, name, ownerId, members: [], channels: [] }
+    sessions: {},  // socket.id -> userId
+    dms: {},       // dmRoomId -> [{senderId, sender, text, timestamp}]
+    channelMessages: {}, // channelId -> [{senderId, sender, text, timestamp}]
+    friendRequests: {}, // userId -> [{fromId, fromUsername, timestamp}]
+};
+
+const getDmRoomId = (id1, id2) => [id1, id2].sort().join('_');
+const voiceRooms = {}; 
+
+io.on('connection', (socket) => {
+    console.log(`Socket connected: ${socket.id}`);
+
+    // --- Authentication ---
+    socket.on('register', ({ username, password, profilePic }, callback) => {
+        const exists = Object.values(db.users).find(u => u.username === username);
+        if (exists) return callback({ success: false, message: 'Username exists' });
+        
+>>>>>>> parent of d55b9a7 (V5)
         const newUser = {
             id: generateId(),
-            username: username.trim(),
+            username,
             password,
             profilePic: profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
             friends: [],
@@ -60,6 +93,7 @@ io.on('connection', (socket) => {
         };
         db.users[newUser.id] = newUser;
         db.friendRequests[newUser.id] = [];
+<<<<<<< HEAD
         callback({ success: true, message: 'Hesap oluşturuldu! Giriş yapabilirsiniz.' });
     });
 
@@ -88,22 +122,40 @@ io.on('connection', (socket) => {
             });
         }
 =======
+=======
+        callback({ success: true, message: 'Registered successfully. Please login.' });
+    });
+
+    socket.on('login', ({ username, password }, callback) => {
+        const user = Object.values(db.users).find(u => u.username === username && u.password === password);
+        if (!user) return callback({ success: false, message: 'Invalid credentials' });
+        
+        db.sessions[socket.id] = user.id;
+>>>>>>> parent of d55b9a7 (V5)
         const userServers = user.servers.map(sId => db.servers[sId]).filter(Boolean);
         const userFriends = user.friends.map(fId => {
             const f = db.users[fId];
             return f ? { id: f.id, username: f.username, profilePic: f.profilePic } : null;
         }).filter(Boolean);
+<<<<<<< HEAD
 >>>>>>> parent of b21c083 (V7)
+=======
+
+        const requests = db.friendRequests[user.id] || [];
+>>>>>>> parent of d55b9a7 (V5)
 
         callback({
-            success: true,
+            success: true, 
             user: { id: user.id, username: user.username, profilePic: user.profilePic },
             servers: userServers,
             friends: userFriends,
             friendRequests: db.friendRequests[user.id] || []
         });
+
+        user.servers.forEach(sId => socket.join(sId));
     });
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     // PROFİL GÜNCELLE
     socket.on('update-profile', ({ newUsername, newPassword, currPassword, status }, cb) => {
@@ -209,14 +261,26 @@ io.on('connection', (socket) => {
         if (!db.friendRequests[target.id]) db.friendRequests[target.id] = [];
         if (db.friendRequests[target.id].find(r => r.fromId === userId))
             return callback({ success: false, message: 'İstek zaten gönderildi.' });
+=======
+    // --- Friends & Requests ---
+    socket.on('send-friend-request', (targetUsername, callback) => {
+        const userId = db.sessions[socket.id];
+        if (!userId) return;
+        const user = db.users[userId];
+        const target = Object.values(db.users).find(u => u.username === targetUsername);
+        
+        if (!target) return callback({ success: false, message: 'User not found' });
+        if (target.id === userId) return callback({ success: false, message: 'Cannot add yourself' });
+        if (user.friends.includes(target.id)) return callback({ success: false, message: 'Already friends' });
+        
+        if (!db.friendRequests[target.id]) db.friendRequests[target.id] = [];
+        const alreadyPending = db.friendRequests[target.id].find(r => r.fromId === userId);
+        if (alreadyPending) return callback({ success: false, message: 'Request already sent' });
+>>>>>>> parent of d55b9a7 (V5)
 
-        const request = {
-            fromId: userId,
-            fromUsername: user.username,
-            fromPic: user.profilePic,
-            timestamp: new Date().toISOString()
-        };
+        const request = { fromId: userId, fromUsername: user.username, fromPic: user.profilePic, timestamp: new Date().toISOString() };
         db.friendRequests[target.id].push(request);
+<<<<<<< HEAD
 
         const targetSocket = findSocketByUserId(target.id);
         if (targetSocket) io.to(targetSocket).emit('receive-friend-request', request);
@@ -232,8 +296,27 @@ io.on('connection', (socket) => {
         const user = db.users[userId];
         const fromUser = db.users[fromId];
         if (!fromUser) return callback({ success: false, message: 'Kullanıcı artık mevcut değil.' });
+=======
+        
+        const targetSocketId = Object.keys(db.sessions).find(sId => db.sessions[sId] === target.id);
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('receive-friend-request', request);
+        }
+        callback({ success: true, message: 'Friend request sent!' });
+    });
 
+    socket.on('accept-friend-request', (fromId, callback) => {
+        const userId = db.sessions[socket.id];
+        if (!userId) return;
+        const user = db.users[userId];
+        const fromUser = db.users[fromId];
+        
+        if (!fromUser) return callback({ success: false, message: 'User no longer exists' });
+>>>>>>> parent of d55b9a7 (V5)
+
+        // Remove from requests
         db.friendRequests[userId] = (db.friendRequests[userId] || []).filter(r => r.fromId !== fromId);
+<<<<<<< HEAD
         if (!user.friends.includes(fromId)) user.friends.push(fromId);
         if (!fromUser.friends.includes(userId)) fromUser.friends.push(userId);
 
@@ -273,21 +356,45 @@ io.on('connection', (socket) => {
         if (!name || !name.trim()) return callback({ success: false, message: 'Sunucu adı gerekli.' });
 >>>>>>> parent of b21c083 (V7)
 
+=======
+
+        // Add to friends
+        if (!user.friends.includes(fromId)) user.friends.push(fromId);
+        if (!fromUser.friends.includes(userId)) fromUser.friends.push(userId);
+        
+        const fromSocketId = Object.keys(db.sessions).find(sId => db.sessions[sId] === fromId);
+        if (fromSocketId) {
+            io.to(fromSocketId).emit('friend-added', { id: user.id, username: user.username, profilePic: user.profilePic });
+        }
+        callback({ success: true, friend: { id: fromUser.id, username: fromUser.username, profilePic: fromUser.profilePic } });
+    });
+
+    // --- Servers ---
+    socket.on('create-server', (name, callback) => {
+        const userId = db.sessions[socket.id];
+        if (!userId) return;
+>>>>>>> parent of d55b9a7 (V5)
         const user = db.users[userId];
         const serverId = generateId();
         const newServer = {
             id: serverId,
-            name: name.trim(),
-            ownerId: userId,
-            members: [userId],
+            name,
+            ownerId: user.id,
+            members: [user.id],
             channels: [
+<<<<<<< HEAD
                 { id: generateId(), name: 'genel', type: 'text' },
                 { id: generateId(), name: 'sohbet', type: 'text' },
                 { id: generateId(), name: 'Ses Odası', type: 'voice' }
+=======
+                { id: generateId(), name: 'Global Chat', type: 'text' },
+                { id: generateId(), name: 'Voice Hub', type: 'voice' }
+>>>>>>> parent of d55b9a7 (V5)
             ]
         };
         db.servers[serverId] = newServer;
         user.servers.push(serverId);
+<<<<<<< HEAD
         socket.join(serverId); // Server odasına katıl
         callback({ success: true, server: newServer });
     });
@@ -450,9 +557,33 @@ io.on('connection', (socket) => {
         if (!userId) return typeof callback === 'function' ? callback({ success: false }) : null;
 >>>>>>> parent of b21c083 (V7)
 
+=======
+        socket.join(serverId);
+        callback({ success: true, server: newServer });
+    });
+
+    socket.on('join-server', (serverId, callback) => {
+        const userId = db.sessions[socket.id];
+        if (!userId) return;
+        const user = db.users[userId];
+        const server = db.servers[serverId];
+        if (!server) return callback({ success: false, message: 'Server not found' });
+        if (user.servers.includes(serverId)) return callback({ success: false, message: 'Already in server' });
+        
+        user.servers.push(server.id);
+        server.members.push(user.id);
+        socket.join(serverId);
+        callback({ success: true, server });
+    });
+
+    // --- Voice Channels ---
+    socket.on('join-channel', ({ serverId, channelId, peerId }, callback) => {
+        const userId = db.sessions[socket.id];
+        if (!userId) return callback({ success: false });
+>>>>>>> parent of d55b9a7 (V5)
         const user = db.users[userId];
 
-        // Önceki ses kanalından çık
+        // Leave previous voice channel
         for (const cId in voiceRooms) {
             const idx = voiceRooms[cId].findIndex(rm => rm.socketId === socket.id);
             if (idx !== -1) {
@@ -466,7 +597,10 @@ io.on('connection', (socket) => {
             }
         }
 
+        if (!voiceRooms[channelId]) voiceRooms[channelId] = [];
+        voiceRooms[channelId].push({ socketId: socket.id, userId, peerId });
         socket.join(channelId);
+<<<<<<< HEAD
 
         // Ses kanalı mı? (peerId gönderildiyse)
         if (peerId) {
@@ -496,6 +630,13 @@ io.on('connection', (socket) => {
     });
 
     // ---- KANALDAN AYRIL ----
+=======
+        socket.to(channelId).emit('user-connected', peerId, user.username);
+        
+        callback({ success: true });
+    });
+    
+>>>>>>> parent of d55b9a7 (V5)
     socket.on('leave-channel', (channelId, peerId) => {
         socket.leave(channelId);
 <<<<<<< HEAD
@@ -516,30 +657,38 @@ io.on('connection', (socket) => {
         socket.to(channelId).emit('user-disconnected', peerId);
     });
 
+<<<<<<< HEAD
     // ---- KANAL MESAJLARINI GETİR ----
+=======
+    // --- Text Chat ---
+>>>>>>> parent of d55b9a7 (V5)
     socket.on('get-channel-messages', (channelId, callback) => {
         callback({ success: true, messages: db.channelMessages[channelId] || [] });
     });
 
+<<<<<<< HEAD
     // ---- KANAL MESAJI GÖNDER ----
     // ÖNEMLİ: serverId de alıyoruz → sunucu odasına broadcast yapıyoruz
     // Böylece kanalda olmayan ama sunucuda olan herkes mesajı alıyor (ama sadece doğru kanalı görüntüleyenler gösteriyor)
     socket.on('send-chat-message', ({ channelId, serverId, text }) => {
+=======
+    socket.on('send-chat-message', (channelId, text) => {
+>>>>>>> parent of d55b9a7 (V5)
         const userId = db.sessions[socket.id];
-        if (!userId || !text || !text.trim()) return;
-
+        if (!userId) return;
         const user = db.users[userId];
+        
         if (!db.channelMessages[channelId]) db.channelMessages[channelId] = [];
-
         const msg = {
             senderId: userId,
             sender: user.username,
             profilePic: user.profilePic,
-            text: text.trim(),
+            text,
             timestamp: new Date().toISOString()
         };
         db.channelMessages[channelId].push(msg);
 
+<<<<<<< HEAD
         // Sunucu odasındaki herkese gönder (login'de sunucu odasına katılıyorlar)
         // socket.to → gönderen hariç herkese
         if (serverId) {
@@ -557,22 +706,37 @@ io.on('connection', (socket) => {
     });
 
     // ---- DM GÖNDER ----
+=======
+        socket.to(channelId).emit('chat-message', {
+            channelId,
+            ...msg
+        });
+    });
+
+    // --- Direct Messages ---
+    socket.on('get-dms', (friendId, callback) => {
+        const userId = db.sessions[socket.id];
+        if (!userId) return;
+        const room = getDmRoomId(userId, friendId);
+        callback({ success: true, messages: db.dms[room] || [] });
+    });
+
+>>>>>>> parent of d55b9a7 (V5)
     socket.on('send-dm', ({ friendId, text }) => {
         const userId = db.sessions[socket.id];
-        if (!userId || !text || !text.trim()) return;
-
+        if (!userId) return;
         const user = db.users[userId];
         const room = getDmRoomId(userId, friendId);
         if (!db.dms[room]) db.dms[room] = [];
-
         const msg = {
             senderId: userId,
             sender: user.username,
             profilePic: user.profilePic,
-            text: text.trim(),
+            text,
             timestamp: new Date().toISOString()
         };
         db.dms[room].push(msg);
+<<<<<<< HEAD
 
         const friendSocket = findSocketByUserId(friendId);
         if (friendSocket) io.to(friendSocket).emit('dm-message', { friendId: userId, message: msg });
@@ -624,6 +788,16 @@ io.on('connection', (socket) => {
     // ---- BAĞLANTI KESİLDİ ----
     socket.on('disconnect', () => {
 >>>>>>> parent of b21c083 (V7)
+=======
+        const friendSocketId = Object.keys(db.sessions).find(sId => db.sessions[sId] === friendId);
+        if (friendSocketId) {
+            io.to(friendSocketId).emit('dm-message', { friendId: userId, message: msg });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        const userId = db.sessions[socket.id];
+>>>>>>> parent of d55b9a7 (V5)
         for (const cId in voiceRooms) {
             const u = voiceRooms[cId].find(rm => rm.socketId === socket.id);
             if (u) {
@@ -662,5 +836,9 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, '0.0.0.0', () => {
+<<<<<<< HEAD
     console.log(`🚀 Nexus çalışıyor: http://localhost:${PORT}`);
+=======
+    console.log(`DC Server running on port ${PORT}`);
+>>>>>>> parent of d55b9a7 (V5)
 });
