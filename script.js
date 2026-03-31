@@ -118,30 +118,50 @@ document.addEventListener('DOMContentLoaded', () => {
         selectors.loginBox.style.display = 'block';
     };
 
-    selectors.loginBtn.onclick = () => {
+    selectors.loginBtn.addEventListener('click', () => {
         const username = selectors.authUsername.value.trim();
         const password = selectors.authPassword.value;
+        
+        document.getElementById('auth-error').textContent = '';
+        if (!socket.connected) return showToast('Sunucuya bağlanılamıyor, lütfen sayfayı yenileyin.', 'error');
         if (!username || !password) return showToast('Lütfen tüm alanları doldurun.', 'error');
 
+        console.log('Login attempt:', username);
         socket.emit('login', { username, password }, (res) => {
+            console.log('Login res:', res);
             if (res.success) handleAuthSuccess(res);
-            else document.getElementById('auth-error').textContent = res.message;
+            else {
+                document.getElementById('auth-error').textContent = res.message;
+                showToast(res.message, 'error');
+            }
         });
-    };
+    });
 
-    selectors.registerBtn.onclick = () => {
+    selectors.registerBtn.addEventListener('click', () => {
         const username = selectors.regUsername.value.trim();
         const password = selectors.regPassword.value;
         const avatar = document.getElementById('auth-avatar-preview').querySelector('img').src;
 
+        document.getElementById('reg-error').textContent = '';
+        if (!socket.connected) return showToast('Sunucuya bağlanılamıyor, lütfen sayfayı yenileyin.', 'error');
         if (!username || !password) return showToast('Lütfen tüm alanları doldurun.', 'error');
         if (password.length < 6) return showToast('Şifre en az 6 karakter olmalıdır.', 'error');
 
+        console.log('Register attempt:', username);
         socket.emit('register', { username, password, avatar }, (res) => {
+            console.log('Register res:', res);
             if (res.success) handleAuthSuccess(res);
-            else document.getElementById('reg-error').textContent = res.message;
+            else {
+                document.getElementById('reg-error').textContent = res.message;
+                showToast(res.message, 'error');
+            }
         });
-    };
+    });
+
+    socket.on('connect_error', (err) => {
+        console.error('Socket connect error:', err);
+        showToast('Bağlantı hatası: Sunucu çevrimdışı olabilir.', 'error');
+    });
 
     function handleAuthSuccess(data) {
         currentUser = data.user;

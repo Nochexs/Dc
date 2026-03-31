@@ -47,7 +47,7 @@ io.on('connection', (socket) => {
     // ---- AUTH ----
     socket.on('register', ({ username, password, avatar }, callback) => {
         const exists = Object.values(db.users).find(u => u.username.toLowerCase() === username.toLowerCase());
-        if (exists) return callback({ success: false, message: 'Bu kullanıcı adı alınmış.' });
+        if (exists) return callback({ success: false, message: 'Bu kullanıcı adı zaten alınmış.' });
 
         const newUser = {
             id: generateId(),
@@ -59,7 +59,16 @@ io.on('connection', (socket) => {
             servers: []
         };
         db.users[newUser.id] = newUser;
-        callback({ success: true, user: newUser });
+        
+        // Önemli: Kayıt sonrası oturumu aç
+        db.sessions[socket.id] = newUser.id;
+        
+        callback({ 
+            success: true, 
+            user: { id: newUser.id, username: newUser.username, avatar: newUser.avatar, status: newUser.status },
+            friends: [],
+            servers: []
+        });
     });
 
     socket.on('login', ({ username, password }, callback) => {
