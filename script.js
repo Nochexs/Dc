@@ -368,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.success) res.messages.forEach(m => appendMessage(m));
             });
         } else {
-            // Voice channel join
             joinVoice(serverId, channel);
         }
         initLucide();
@@ -430,9 +429,6 @@ document.addEventListener('DOMContentLoaded', () => {
             appendMessage({ sender: currentUser.username, senderId: currentUser.id, text, profilePic: currentUser.profilePic, timestamp: payload.timestamp });
         } else {
             socket.emit('send-chat-message', { channelId: currentChannelId, serverId: currentServerId, text });
-            // appendMessage is handled by socket event for text channels normally, 
-            // but let's append locally for immediate feedback if desired. 
-            // Re-sync with server event logic:
         }
         selectors.chatInput.value = '';
     }
@@ -456,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
             peers[call.peer] = call;
         });
 
-        // Pre-fetch mic access
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
             localStream = stream;
             loadAudioDevices();
@@ -470,9 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function joinVoice(serverId, channel) {
         if (!myPeer) return;
-        
-        leaveVoice(false); // Clean previous if any
-        
+        leaveVoice(false);
         currentChannelId = channel.id;
         currentChannelType = 'voice';
         
@@ -481,9 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectors.chatMessages.style.display = 'none';
         selectors.chatInput.disabled = true;
         selectors.activeVoiceChannel.textContent = channel.name;
-        
         renderSidebar();
-        
         addVoiceCard(myPeer.id, currentUser.username, true);
         
         socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer.id }, (res) => {
@@ -534,7 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
             card.classList.remove('is-sharing-screen');
         }
         
-        // Speaking animation detection
         if (stream.getAudioTracks().length > 0) {
             setupSpeakingDetection(peerId, stream);
         }
@@ -553,19 +543,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addVoiceCard(peerId, username, isSelf) {
-        const div = document.createElement('div');
-        div.className = 'voice-card';
-        div.setAttribute('data-peer-id', peerId);
-        div.innerHTML = `
-            <video class="screen-view" autoplay playsinline style="display:none;"></video>
-            <div class="avatar-ring">
-                <div class="avatar-circle" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=${username}')"></div>
-                <div class="sound-wave"></div><div class="sound-wave"></div>
-            </div>
-            <div class="user-label">${escapeHtml(username)}${isSelf ? ' (Sen)' : ''}</div>
-            <audio autoplay ${isSelf ? 'muted' : ''}></audio>
-        `;
-        selectors.voiceGrid.appendChild(div);
+        if (document.querySelector(`[data-peer-id="${peerId}"]`)) return;
+        const tmpl = document.getElementById('user-card-template');
+        
+        const card = tmpl.content.cloneNode(true).querySelector('.voice-card');
+        card.setAttribute('data-peer-id', peerId);
+        card.querySelector('.user-label').textContent = username + (isSelf ? ' (Ben)' : '');
+        card.querySelector('.avatar-circle').style.backgroundImage =
+            `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(username)}')`;
+        if (isSelf) card.querySelector('audio').muted = true;
+        selectors.voiceGrid.appendChild(card); 
+        initLucide();
         
         if (isSelf && localStream) {
             setupSpeakingDetection(peerId, localStream);
@@ -623,13 +611,8 @@ document.addEventListener('DOMContentLoaded', () => {
         handleFriendUpdate(data.userId, data.status);
     });
 
-    socket.on('friend-online', data => {
-        handleFriendUpdate(data.userId, 'online');
-    });
-
-    socket.on('friend-offline', data => {
-        handleFriendUpdate(data.userId, 'offline');
-    });
+    socket.on('friend-online', data => handleFriendUpdate(data.userId, 'online'));
+    socket.on('friend-offline', data => handleFriendUpdate(data.userId, 'offline'));
 
     function handleFriendUpdate(userId, status) {
         const friend = friends.find(f => f.id === userId);
@@ -693,7 +676,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 isScreenSharing = true;
                 selectors.screenShareBtn.classList.add('active');
                 
-                // Update my voice card
                 const myCard = document.querySelector(`[data-peer-id="${myPeer.id}"]`);
                 if (myCard) {
                     const video = myCard.querySelector('video');
@@ -702,7 +684,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     myCard.classList.add('is-sharing-screen');
                 }
                 
-                // Switch tracks for existing calls
                 Object.values(peers).forEach(call => {
                     const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
                     if (sender) sender.replaceTrack(screenStream.getVideoTracks()[0]);
@@ -727,22 +708,16 @@ document.addEventListener('DOMContentLoaded', () => {
             myCard.querySelector('video').style.display = 'none';
             myCard.classList.remove('is-sharing-screen');
         }
-        
-        Object.values(peers).forEach(call => {
-            const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
-            if (sender) call.peerConnection.removeTrack(sender);
-        });
         showToast('Ekran paylaşımı durduruldu.');
     }
 
-    // Modal close logic
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             btn.closest('.modal-overlay').style.display = 'none';
         });
     });
 
-    // Profile Settings Status
+    // Update profile status
     document.querySelectorAll('.status-option').forEach(btn => {
         btn.addEventListener('click', () => {
             const status = btn.dataset.status;
@@ -758,7 +733,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Speaking Animation Loop
     function animationLoop() {
         if (currentChannelType === 'voice') {
             const dataArray = new Uint8Array(128);
@@ -773,7 +747,5 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animationLoop);
     }
     animationLoop();
-
-    // Initial setup
     updateAvatarPreview();
 });

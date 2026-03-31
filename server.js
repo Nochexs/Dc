@@ -119,11 +119,7 @@ io.on('connection', (socket) => {
             if (taken) return cb({ success: false, message: 'Bu kullanıcı adı alınmış.' });
             user.username = newUsername.trim();
         }
-        
-        if (newPassword && newPassword.trim()) {
-            if (user.password !== currPassword) return cb({ success: false, message: 'Mevcut şifreniz hatalı.' });
-            user.password = newPassword.trim();
-        }
+        if (newPassword && newPassword.trim()) user.password = newPassword.trim();
 
         if (profilePic && profilePic.trim()) {
             user.profilePic = profilePic.trim();
@@ -242,7 +238,6 @@ io.on('connection', (socket) => {
         db.friendRequests[uid] = (db.friendRequests[uid] || []).filter(r => r.fromId !== fromId);
         cb({ success: true });
     });
-
     // ARKADAŞI KALDIR
     socket.on('remove-friend', (friendId, cb) => {
         const uid = db.sessions[socket.id];
@@ -457,14 +452,8 @@ io.on('connection', (socket) => {
     // KANALDAN AYRIL
     socket.on('leave-channel', (channelId, peerId) => {
         socket.leave(channelId);
-        let srvId = null;
-        Object.values(db.servers).forEach(s => {
-            if (s.channels.find(c => c.id === channelId)) srvId = s.id;
-        });
-
         if (voiceRooms[channelId]) {
             voiceRooms[channelId] = voiceRooms[channelId].filter(u => u.socketId !== socket.id);
-            if (srvId) io.to(srvId).emit('channel-users-updated', channelId, voiceRooms[channelId].map(u => u.userId));
         }
         socket.to(channelId).emit('user-disconnected', peerId);
     });
@@ -588,12 +577,6 @@ io.on('connection', (socket) => {
             if (u) {
                 voiceRooms[cId] = voiceRooms[cId].filter(rm => rm.socketId !== socket.id);
                 socket.to(cId).emit('user-disconnected', u.peerId);
-                
-                let srvId = null;
-                Object.values(db.servers).forEach(s => {
-                    if (s.channels.find(c => c.id === cId)) srvId = s.id;
-                });
-                if (srvId) io.to(srvId).emit('channel-users-updated', cId, voiceRooms[cId].map(x => x.userId));
             }
         }
         
