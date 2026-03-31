@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Selectors ---
+<<<<<<< HEAD
     const authOverlay        = document.getElementById('auth-overlay');
     const loginBox           = document.getElementById('login-box');
     const registerBox        = document.getElementById('register-box');
@@ -20,9 +21,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContainer       = document.getElementById('app-container');
     const mainHeaderTitle    = document.getElementById('main-header-title');
     const mainHeaderIcon     = document.getElementById('main-header-icon');
+=======
+    const authOverlay = document.getElementById('auth-overlay');
+    const loginBtn = document.getElementById('login-btn');
+    const registerBtn = document.getElementById('register-btn');
+    const authUsernameInput = document.getElementById('auth-username');
+    const authPasswordInput = document.getElementById('auth-password');
+    const authError = document.getElementById('auth-error');
+
+    const appContainer = document.getElementById('app-container');
+    const mainHeaderTitle = document.getElementById('main-header-title');
+>>>>>>> parent of e729613 (v4)
     const sidebarContextTitle = document.getElementById('sidebar-context-title');
-    const dynamicServerList  = document.getElementById('dynamic-server-list');
+    const dynamicServerList = document.getElementById('dynamic-server-list');
     const dynamicChannelList = document.getElementById('dynamic-channel-list');
+<<<<<<< HEAD
     const chatMessages       = document.getElementById('chat-messages');
     const chatInput          = document.getElementById('chat-input');
     const sendMsgBtn         = document.getElementById('send-msg-btn');
@@ -82,10 +95,43 @@ document.addEventListener('DOMContentLoaded', () => {
     let screenStream    = null;
     let isMuted         = false;
     let isDeafened      = false;
+=======
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendMsgBtn = document.getElementById('send-msg-btn');
+
+    const micBtn = document.getElementById('mic-btn');
+    const deafenBtn = document.getElementById('deafen-btn');
+    const screenShareBtn = document.getElementById('screen-share-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const voiceControls = document.getElementById('voice-controls');
+    const voiceGrid = document.getElementById('voice-grid');
+    const welcomeMessage = document.getElementById('welcome-message');
+
+    // Modals
+    const createServerModal = document.getElementById('create-server-modal');
+    const addFriendModal = document.getElementById('add-friend-modal');
+    const joinServerModal = document.getElementById('join-server-modal');
+
+    // --- State Management ---
+    let socket = io('/');
+    let myPeer = null;
+    let currentUser = null;
+    let friends = [];
+    let servers = [];
+    let currentContext = 'friends'; 
+    let currentChannelId = null;
+    let peers = {}; 
+    let localStream = null;
+    let screenStream = null;
+    let isMuted = false;
+    let isDeafened = false;
+>>>>>>> parent of e729613 (v4)
     let isScreenSharing = false;
     let audioDevices    = [];
     let selectedMicId   = null;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     // ── AYARLAR ──────────────────────────────────────────────────────
     let appSettings = JSON.parse(localStorage.getItem('nexus_settings')) || {
@@ -109,6 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── YARDIMCILAR ──────────────────────────────────────────────────
     function esc(s) {
         return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+=======
+    // --- Initialization ---
+    function initLucide() {
+        if (window.lucide) lucide.createIcons();
+>>>>>>> parent of e729613 (v4)
     }
     function timeStr(ts) {
         if (!ts) return '';
@@ -125,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
 >>>>>>> parent of b21c083 (V7)
     function initLucide() { if (window.lucide) lucide.createIcons(); }
 
+<<<<<<< HEAD
     function showError(msg) {
         authError.style.color = 'var(--accent-red)';
         authError.textContent = msg;
@@ -168,6 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
     });
 
+=======
+    // --- Authentication ---
+>>>>>>> parent of e729613 (v4)
     function handleAuth(type) {
 <<<<<<< HEAD
         let username, password, errorEl;
@@ -189,6 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
 =======
         const username = authUsernameInput.value.trim();
         const password = authPasswordInput.value.trim();
+<<<<<<< HEAD
         if (!username || !password) return showError('Lütfen tüm alanları doldurun.');
 
         const profilePic = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
@@ -207,10 +263,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     appContainer.style.display = 'flex';
                     document.querySelector('#my-avatar img').src = currentUser.profilePic;
 
+=======
+        if(!username || !password) return authError.textContent = "Please fill in all fields.";
+        
+        socket.emit(type, {username, password}, (res) => {
+            if(res.success) {
+                if(type === 'login') {
+                    currentUser = res.user;
+                    friends = res.friends;
+                    servers = res.servers;
+                    authOverlay.style.display = 'none';
+                    appContainer.style.display = 'flex';
+                    document.getElementById('my-username-display').textContent = currentUser.username;
+                    // Seed avatar based on name
+                    document.querySelector('#my-avatar img').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.username}`;
+                    
+>>>>>>> parent of e729613 (v4)
                     initWebRTC();
                     renderServerList();
                     renderSidebar();
-                    updateNotifBadge();
                     initLucide();
 
                     // Davet linki varsa sor
@@ -230,6 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else {
+<<<<<<< HEAD
                     errorEl.style.color = 'var(--accent-green)';
                     errorEl.textContent = res.message;
                     // Switch to login explicitly and DONT delete the password
@@ -249,6 +321,13 @@ document.addEventListener('DOMContentLoaded', () => {
 =======
                 showError(res.message);
 >>>>>>> parent of b21c083 (V7)
+=======
+                    authError.style.color = 'var(--accent-green)';
+                    authError.textContent = res.message;
+                }
+            } else {
+                authError.textContent = res.message;
+>>>>>>> parent of e729613 (v4)
             }
         });
     }
@@ -261,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     regPasswordInput.addEventListener('keypress', e => { if (e.key==='Enter') handleAuth('register'); });
     regUsernameInput.addEventListener('keypress', e => { if (e.key==='Enter') regPasswordInput.focus(); });
 
+<<<<<<< HEAD
     showRegisterBtn.addEventListener('click', () => {
         loginBox.style.display = 'none';
         registerBox.style.display = 'block';
@@ -360,18 +440,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // SERVER LIST
     // ============================================================
 >>>>>>> parent of b21c083 (V7)
+=======
+    // --- Navigation & UI Rendering ---
+>>>>>>> parent of e729613 (v4)
     function renderServerList() {
         dynamicServerList.innerHTML = '';
         servers.forEach(s => {
             const el = document.createElement('div');
             el.className = `server-icon tooltip ${currentContext === s.id ? 'active' : ''}`;
             el.setAttribute('data-tooltip', s.name);
-            el.textContent = s.name.substring(0, 2).toUpperCase();
+            el.innerHTML = s.name.substring(0, 1).toUpperCase();
             el.addEventListener('click', () => {
+<<<<<<< HEAD
                 activateServer(s);
+=======
+                currentContext = s.id;
+>>>>>>> parent of e729613 (v4)
                 document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('active'));
-                document.getElementById('nav-friends').classList.remove('active');
                 el.classList.add('active');
+<<<<<<< HEAD
             });
             dynamicServerList.appendChild(el);
         });
@@ -478,10 +565,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.innerHTML = `<img src="${f.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.username}`}"
                     style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0;">
                     <span>${escapeHtml(f.username)}</span>`;
+=======
+                renderServerList();
+                renderSidebar();
+                switchMainView('server', s);
+            });
+            dynamicServerList.appendChild(el);
+        });
+    }
+
+    function renderSidebar() {
+        dynamicChannelList.innerHTML = '';
+        if(currentContext === 'friends') {
+            sidebarContextTitle.textContent = 'FRIENDS';
+            friends.forEach(f => {
+                const li = document.createElement('li');
+                li.className = currentChannelId === `dm_${f.id}` ? 'active' : '';
+                li.innerHTML = `<i data-lucide="user"></i> <span>${f.username}</span>`;
+>>>>>>> parent of e729613 (v4)
                 li.addEventListener('click', () => openDM(f));
                 dynamicChannelList.appendChild(li);
             });
-
         } else {
 <<<<<<< HEAD
             const server = servers.find(s => String(s.id) === String(currentContext));
@@ -537,8 +641,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 =======
             const server = servers.find(s => s.id === currentContext);
-            if (!server) return;
             sidebarContextTitle.textContent = server.name.toUpperCase();
+<<<<<<< HEAD
             btnAddFriend.style.display  = 'none';
             btnInviteServer.style.display = '';
 
@@ -568,6 +672,16 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSection('METİN KANALLARI', textChs, () => 'hash');
             renderSection('SES KANALLARI', voiceChs, () => 'volume-2');
 >>>>>>> parent of b21c083 (V7)
+=======
+            server.channels.forEach(ch => {
+                const li = document.createElement('li');
+                li.className = currentChannelId === ch.id ? 'active' : '';
+                const iconType = ch.type === 'voice' ? 'mic' : 'hash';
+                li.innerHTML = `<i data-lucide="${iconType}"></i> <span>${ch.name}</span>`;
+                li.addEventListener('click', () => joinChannel(server.id, ch));
+                dynamicChannelList.appendChild(li);
+            });
+>>>>>>> parent of e729613 (v4)
         }
         initLucide();
     }
@@ -682,16 +796,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 =======
     function switchMainView(type, data) {
-        if (type === 'server') {
+        if(type === 'server') {
             mainHeaderTitle.textContent = data.name;
-            mainHeaderIcon.setAttribute('data-lucide', 'server');
+            document.getElementById('main-header-icon').setAttribute('data-lucide', 'server');
         } else {
+<<<<<<< HEAD
             mainHeaderTitle.textContent = 'Arkadaşlar';
             mainHeaderIcon.setAttribute('data-lucide', 'users');
+=======
+            mainHeaderTitle.textContent = 'Friends';
+            document.getElementById('main-header-icon').setAttribute('data-lucide', 'users');
+>>>>>>> parent of e729613 (v4)
         }
         initLucide();
     }
 
+<<<<<<< HEAD
     // ============================================================
     // DM
     // ============================================================
@@ -721,14 +841,23 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceGrid.style.display      = 'none';
 >>>>>>> parent of b21c083 (V7)
 
+=======
+    function openDM(friend) {
+        currentChannelId = `dm_${friend.id}`;
+        renderSidebar();
+        mainHeaderTitle.textContent = friend.username;
+        document.getElementById('main-header-icon').setAttribute('data-lucide', 'user');
+        chatInput.disabled = false;
+        chatMessages.innerHTML = '';
+        welcomeMessage.style.display = 'none';
+>>>>>>> parent of e729613 (v4)
         socket.emit('get-dms', friend.id, (res) => {
-            if (res.success) {
-                res.messages.forEach(m => appendMessage(m.sender, m.text, m.senderId === currentUser.id, m.profilePic, m.timestamp));
-            }
+            if(res.success) res.messages.forEach(m => appendMessage(m.sender, m.text, m.senderId === currentUser.id));
         });
         initLucide();
     }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     async function getMicStream() {
         if (localStream) return localStream;
@@ -814,6 +943,19 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(err => console.warn('Mikrofon erişimi reddedildi:', err));
 >>>>>>> parent of b21c083 (V7)
+=======
+    // --- WebRTC Logic ---
+    function initWebRTC() {
+        myPeer = new Peer(undefined, { host: '0.peerjs.com', port: 443, secure: true });
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            localStream = stream;
+            myPeer.on('call', call => {
+                call.answer(isScreenSharing ? screenStream : localStream);
+                call.on('stream', userStream => handleRemoteStream(call.peer, userStream));
+                peers[call.peer] = call;
+            });
+        }).catch(err => console.error("Could not access microphone:", err));
+>>>>>>> parent of e729613 (v4)
     }
 
     async function loadAudioDevices() {
@@ -827,6 +969,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── KANALA KATIL ─────────────────────────────────────────────────
     function joinChannel(serverId, channel) {
+<<<<<<< HEAD
         if (channel.type === 'text') {
             if (currentChannelType === 'voice') leaveVoice(false);
             currentChannelId = channel.id; currentServerId = serverId; currentChannelType = 'text';
@@ -884,6 +1027,28 @@ document.addEventListener('DOMContentLoaded', () => {
 <<<<<<< HEAD
         // SES KANALI
         joinVoice(channel.id);
+=======
+        if(channel.type === 'text') {
+            currentChannelId = channel.id;
+            renderSidebar();
+            chatInput.disabled = false;
+            welcomeMessage.style.display = 'none';
+            chatMessages.innerHTML = `<div class="welcome-notif"><h3>Welcome to #${channel.name}</h3></div>`;
+            return;
+        }
+
+        // Voice Room Logic
+        currentChannelId = channel.id;
+        renderSidebar();
+        welcomeMessage.style.display = 'none';
+        voiceGrid.style.display = 'grid';
+        voiceControls.style.display = 'flex';
+        document.getElementById('active-voice-channel').textContent = channel.name;
+        voiceGrid.innerHTML = '';
+        
+        addVoiceCard(myPeer.id, currentUser.username, null, true);
+        socket.emit('join-channel', { serverId, channelId: channel.id, peerId: myPeer.id }, () => {});
+>>>>>>> parent of e729613 (v4)
     }
 
     function joinVoice(chId) {
@@ -974,6 +1139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Yeni kullanıcı bağlandı (birinci kullanıcı bu eventi alır)
 >>>>>>> parent of b21c083 (V7)
     socket.on('user-connected', (peerId, username) => {
+<<<<<<< HEAD
         if (currentChannelType !== 'voice') return;
         const streamToSend = isScreenSharing && screenStream ? screenStream : localStream;
         if (streamToSend) {
@@ -982,22 +1148,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 call.on('stream', userStream => handleRemoteStream(peerId, userStream));
                 peers[peerId] = call;
             }
+=======
+        const call = myPeer.call(peerId, isScreenSharing ? screenStream : localStream);
+        if (call) {
+            call.on('stream', userStream => handleRemoteStream(peerId, userStream));
+            peers[peerId] = call;
+>>>>>>> parent of e729613 (v4)
         }
         addVoiceCard(peerId, username, null, false);
     });
 
     socket.on('user-disconnected', peerId => {
+<<<<<<< HEAD
         if (peers[peerId]) { peers[peerId].close(); delete peers[peerId]; }
         document.querySelector(`[data-peer-id="${peerId}"]`)?.remove();
         if (voiceGrid.style.display === 'grid' && voiceGrid.querySelectorAll('.voice-card').length === 0) {
             leaveVoice(false);
+=======
+        if(peers[peerId]) peers[peerId].close();
+        document.querySelector(`[data-peer-id="${peerId}"]`)?.remove();
+        delete peers[peerId];
+        if (voiceGrid.children.length === 0) {
+            voiceGrid.style.display = 'none';
+            voiceControls.style.display = 'none';
+            welcomeMessage.style.display = 'flex';
+>>>>>>> parent of e729613 (v4)
         }
     });
 
     function handleRemoteStream(peerId, stream) {
         const card = document.querySelector(`[data-peer-id="${peerId}"]`);
-        if (!card) return;
+        if(!card) return;
         const audio = card.querySelector('audio');
+<<<<<<< HEAD
         if (audio) {
             audio.srcObject = stream;
             if (peerId === myPeer?.id) audio.muted = true;
@@ -1034,6 +1217,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 =======
         if (video && stream.getVideoTracks().length > 0) {
+=======
+        if (audio) audio.srcObject = stream;
+        
+        const video = card.querySelector('video');
+        if(stream.getVideoTracks().length > 0) {
+>>>>>>> parent of e729613 (v4)
             video.srcObject = stream;
             video.style.display = 'block';
             card.querySelector('.avatar-ring').classList.add('has-video');
@@ -1050,14 +1239,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const clone = template.content.cloneNode(true);
         const card = clone.querySelector('.voice-card');
         card.setAttribute('data-peer-id', peerId);
+<<<<<<< HEAD
         card.querySelector('.user-label').textContent = username + (isSelf ? ' (Sen)' : '');
         card.querySelector('.avatar-circle').style.backgroundImage =
             `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(username)}')`;
         if (isSelf) card.querySelector('audio').muted = true;
+=======
+        card.querySelector('.user-label').textContent = username + (isSelf ? ' (You)' : '');
+        card.querySelector('.avatar-circle').style.backgroundImage = `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${username}')`;
+        if(isSelf) card.querySelector('audio').muted = true;
+>>>>>>> parent of e729613 (v4)
         voiceGrid.appendChild(card);
         initLucide();
     }
 
+<<<<<<< HEAD
     function leaveVoice(notify = true) {
 <<<<<<< HEAD
         if (isScreenSharing) stopScreenShare();
@@ -1118,10 +1314,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <span>${escapeHtml(text)}</span>
             </div>`;
+=======
+    // --- Messaging ---
+    function appendMessage(sender, text, isSelf) {
+        const div = document.createElement('div');
+        div.className = `message ${isSelf ? 'self' : ''}`;
+        div.innerHTML = `<strong>${sender}</strong> <span>${text}</span>`;
+>>>>>>> parent of e729613 (v4)
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+<<<<<<< HEAD
     function sendMessage() {
         const val = chatInput.value.trim();
 <<<<<<< HEAD
@@ -1171,10 +1375,23 @@ document.addEventListener('DOMContentLoaded', () => {
 =======
         if (d.channelId === currentChannelId) {
             appendMessage(d.sender, d.text, false, d.profilePic, d.timestamp);
+=======
+    chatInput.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter' && chatInput.value.trim()) {
+            const val = chatInput.value.trim();
+            if(currentChannelId.startsWith('dm_')) {
+                socket.emit('send-dm', { friendId: currentChannelId.split('_')[1], text: val });
+            } else {
+                socket.emit('send-chat-message', currentChannelId, val);
+            }
+            appendMessage(currentUser.username, val, true);
+            chatInput.value = '';
+>>>>>>> parent of e729613 (v4)
         }
 >>>>>>> parent of b21c083 (V7)
     });
 
+<<<<<<< HEAD
     // Gelen DM
     socket.on('dm-message', d => {
         if (currentChannelId === `dm_${d.friendId}`) {
@@ -1185,31 +1402,49 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     // VOICE CONTROLS
     // ============================================================
+=======
+    socket.on('chat-message', d => d.channelId === currentChannelId && appendMessage(d.sender, d.text, false));
+    socket.on('dm-message', d => currentChannelId === `dm_${d.friendId}` && appendMessage(d.message.sender, d.message.text, false));
+
+    // --- Controls ---
+>>>>>>> parent of e729613 (v4)
     micBtn.addEventListener('click', () => {
         isMuted = !isMuted;
-        if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+        if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted;
         micBtn.classList.toggle('leave-btn', isMuted);
-        micBtn.innerHTML = `<i data-lucide="${isMuted ? 'mic-off' : 'mic'}"></i>`;
+        micBtn.innerHTML = `<i data-lucide="mic${isMuted ? '-off' : ''}"></i>`;
         initLucide();
     });
 
     deafenBtn.addEventListener('click', () => {
         isDeafened = !isDeafened;
+<<<<<<< HEAD
         document.querySelectorAll('.voice-card audio').forEach(a => {
             const card = a.closest('.voice-card');
             if (card && card.getAttribute('data-peer-id') !== myPeer?.id) a.muted = isDeafened;
         });
         deafenBtn.classList.toggle('leave-btn', isDeafened);
         deafenBtn.innerHTML = `<i data-lucide="${isDeafened ? 'volume-x' : 'headphones'}"></i>`;
+=======
+        const allAudios = document.querySelectorAll('audio');
+        allAudios.forEach(a => {
+            if (a.parentElement.parentElement.getAttribute('data-peer-id') !== myPeer.id) {
+                a.muted = isDeafened;
+            }
+        });
+        deafenBtn.classList.toggle('leave-btn', isDeafened);
+        deafenBtn.innerHTML = `<i data-lucide="headphones${isDeafened ? '-off' : ''}"></i>`;
+>>>>>>> parent of e729613 (v4)
         initLucide();
         showToast(isDeafened ? 'Sesi kapattın' : 'Ses açıldı');
     });
 
     screenShareBtn.addEventListener('click', async () => {
         try {
-            if (!isScreenSharing) {
-                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            if(!isScreenSharing) {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                 isScreenSharing = true;
+<<<<<<< HEAD
                 screenShareBtn.classList.add('btn-active');
                 updateStreams(screenStream);
                 const myCard = document.querySelector(`[data-peer-id="${myPeer?.id}"]`);
@@ -1220,10 +1455,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 screenStream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
                 showToast('Ekran paylaşımı başladı', 'success');
+=======
+                screenShareBtn.classList.add('accent-glow');
+                updateStreams(screenStream);
+                const myCard = document.querySelector(`[data-peer-id="${myPeer.id}"]`);
+                const v = myCard.querySelector('video');
+                v.srcObject = screenStream; v.style.display = 'block';
+>>>>>>> parent of e729613 (v4)
             } else {
-                stopScreenShare();
+                screenStream.getTracks().forEach(t => t.stop());
+                isScreenSharing = false;
+                updateStreams(localStream);
+                const myCard = document.querySelector(`[data-peer-id="${myPeer.id}"]`);
+                myCard.querySelector('video').style.display = 'none';
             }
         } catch (err) {
+<<<<<<< HEAD
             if (err.name !== 'NotAllowedError') showToast('Ekran paylaşımı başarısız', 'error');
         }
     });
@@ -1238,16 +1485,27 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Ekran paylaşımı durduruldu');
     }
 
+=======
+            console.error("Screen share failed:", err);
+        }
+    });
+
+>>>>>>> parent of e729613 (v4)
     function updateStreams(stream) {
         Object.values(peers).forEach(call => {
-            if (!call.peerConnection) return;
             const videoTrack = stream.getVideoTracks()[0];
+<<<<<<< HEAD
             const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
             if (sender && videoTrack) sender.replaceTrack(videoTrack).catch(console.warn);
+=======
+            const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
+            if(sender && videoTrack) sender.replaceTrack(videoTrack).catch(e => console.error(e));
+>>>>>>> parent of e729613 (v4)
             else if (videoTrack) call.peerConnection.addTrack(videoTrack, stream);
         });
     }
 
+<<<<<<< HEAD
     disconnectBtn.addEventListener('click', () => leaveVoice(true));
 
 <<<<<<< HEAD
@@ -1529,11 +1787,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }, 50);
                 showToast(`"${res.server.name}" sunucusu oluşturuldu!`);
+=======
+    disconnectBtn.addEventListener('click', () => {
+        socket.emit('leave-channel', currentChannelId, myPeer.id);
+        voiceGrid.style.display = 'none';
+        voiceControls.style.display = 'none';
+        welcomeMessage.style.display = 'flex';
+        // Close all calls
+        Object.values(peers).forEach(call => call.close());
+        peers = {};
+    });
+
+    // --- Modal Logic ---
+    document.getElementById('nav-add-server').addEventListener('click', () => createServerModal.style.display = 'flex');
+    document.getElementById('btn-add-friend').addEventListener('click', () => addFriendModal.style.display = 'flex');
+    document.getElementById('nav-join-server').addEventListener('click', () => joinServerModal.style.display = 'flex');
+    
+    document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', () => {
+        b.closest('.modal-overlay').style.display = 'none';
+    }));
+
+    document.getElementById('confirm-create-server').addEventListener('click', () => {
+        const n = document.getElementById('new-server-name').value;
+        if (!n) return;
+        socket.emit('create-server', n, (res) => {
+            if(res.success) { 
+                servers.push(res.server); 
+                renderServerList();
+                createServerModal.style.display = 'none';
+>>>>>>> parent of e729613 (v4)
             }
         });
     });
 
     document.getElementById('confirm-add-friend').addEventListener('click', () => {
+<<<<<<< HEAD
         const name = document.getElementById('new-friend-username').value.trim();
         const msgEl = document.getElementById('add-friend-message');
         if (!name) return;
@@ -1543,10 +1831,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.success) {
                 document.getElementById('new-friend-username').value = '';
                 showToast(res.message);
+=======
+        const n = document.getElementById('new-friend-username').value;
+        if (!n) return;
+        socket.emit('add-friend', n, (res) => {
+            if(res.success) { 
+                friends.push(res.friend); 
+                renderSidebar(); 
+                addFriendModal.style.display = 'none'; 
+            } else {
+                document.getElementById('add-friend-message').textContent = res.message;
+>>>>>>> parent of e729613 (v4)
             }
         });
     });
 
+<<<<<<< HEAD
     document.getElementById('confirm-join-server').addEventListener('click', () => {
         let val = document.getElementById('join-server-link').value.trim();
         if (val.includes('?invite=')) val = val.split('?invite=')[1].split('&')[0];
@@ -2315,4 +2615,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const inviteId  = urlParams.get('invite');
     if (inviteId) window._pendingInvite = inviteId;
 >>>>>>> parent of b21c083 (V7)
+=======
+    // Sidebar context home click
+    document.getElementById('nav-home').addEventListener('click', () => {
+        currentContext = 'friends';
+        document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+        renderSidebar();
+        switchMainView('home');
+    });
+
+    // Support Settings
+    document.getElementById('open-settings-btn').addEventListener('click', () => {
+        alert("Nexus Settings Interface coming soon!");
+    });
+>>>>>>> parent of e729613 (v4)
 });
