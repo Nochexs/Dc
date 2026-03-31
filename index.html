@@ -3,16 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
-<<<<<<< HEAD
-    <title>Nexus | Premium Voice &amp; Chat</title>
+    <title>Nexus | Premium Voice & Chat</title>
     <meta name="description" content="Nexus - Sesli ve yazılı iletişimin yeni boyutu.">
-=======
-    <title>Nexus | Premium Voice & Chat</title>
->>>>>>> parent of e729613 (v4)
-=======
-    <title>Nexus | Premium Voice & Chat</title>
->>>>>>> parent of e729613 (v4)
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -23,633 +15,111 @@
 <body>
     <div class="background-mesh"></div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<!-- ═══════════════ AUTH ═══════════════ -->
-<div class="auth-overlay" id="auth-overlay">
-    <!-- GİRİŞ EKRANI -->
-    <div class="auth-box glass-panel" id="login-box">
-        <div class="auth-logo"><i data-lucide="zap" class="logo-icon"></i></div>
-        <h2>Nexus'a Hoş Geldin</h2>
-        <p class="auth-sub">İletişimin yeni boyutuna adım at.</p>
-        <div class="form-group">
-            <label for="auth-username">KULLANICI ADI</label>
-            <input type="text" id="auth-username" placeholder="kullanici_adi" autocomplete="off" class="glass-input">
-        </div>
-        <div class="form-group">
-            <label for="auth-password">ŞİFRE</label>
-            <input type="password" id="auth-password" placeholder="••••••••" autocomplete="off" class="glass-input">
-        </div>
-        <p id="auth-error" class="error-msg"></p>
-        <button class="primary-btn full-width" id="login-btn">Giriş Yap</button>
-        <p class="auth-footer-text">Hesabın yok mu?
-            <button id="show-register-btn" class="link-btn">Kayıt Ol</button>
-        </p>
-    </div>
-
-    <!-- KAYIT EKRANI -->
-    <div class="auth-box glass-panel" id="register-box" style="display:none; width: 440px; border-color: rgba(0, 255, 157, 0.2); box-shadow: 0 10px 40px rgba(0, 255, 157, 0.05);">
-        <div class="auth-logo"><i data-lucide="user-plus" class="logo-icon" style="color: var(--accent-green);"></i></div>
-        <h2>Aramıza Katıl</h2>
-        <p class="auth-sub">Kendine bir avatar seç ve maceraya başla.</p>
-        <div class="auth-avatar-selection">
-            <div class="avatar-preview" id="auth-avatar-preview">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nexus" alt="Avatar">
-            </div>
-            <button class="icon-btn-lite" id="refresh-avatar-btn">
-                <i data-lucide="refresh-cw"></i> Değiştir
-            </button>
-        </div>
-        <div class="form-group">
-            <label for="reg-username">KULLANICI ADI</label>
-            <input type="text" id="reg-username" placeholder="Örn: hyper_user" autocomplete="off" class="glass-input">
-        </div>
-        <div class="form-group">
-            <label for="reg-password">ŞİFRE</label>
-            <input type="password" id="reg-password" placeholder="En az 6 karakter" autocomplete="off" class="glass-input">
-        </div>
-        <p id="reg-error" class="error-msg"></p>
-        <button class="primary-btn full-width" id="register-btn" style="background: linear-gradient(135deg, var(--accent-green), #059669); color: #000; box-shadow: 0 6px 20px rgba(0,255,157,.2);">Hesap Oluştur</button>
-        <p class="auth-footer-text">Zaten hesabın var mı?
-            <button id="show-login-btn" class="link-btn">Giriş Yap</button>
-        </p>
-=======
-    <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
-
-    <!-- ===== AUTH ===== -->
-=======
-    <!-- Auth Overlay (Glassmorphism) -->
->>>>>>> parent of e729613 (v4)
-=======
-    <!-- Auth Overlay (Glassmorphism) -->
->>>>>>> parent of e729613 (v4)
+    <!-- ═══════════════ AUTH ═══════════════ -->
     <div class="auth-overlay" id="auth-overlay">
-        <div class="auth-box glass-panel">
-            <div class="auth-logo">
-                <i data-lucide="zap" class="logo-icon"></i>
-            </div>
-<<<<<<< HEAD
-<<<<<<< HEAD
+        <!-- GİRİŞ EKRANI -->
+        <div class="auth-box glass-panel" id="login-box">
+            <div class="auth-logo"><i data-lucide="zap" class="logo-icon"></i></div>
             <h2>Nexus'a Hoş Geldin</h2>
             <p class="auth-sub">İletişimin yeni boyutuna adım at.</p>
-
-=======
-            <h2>Welcome to Nexus</h2>
-            <p class="auth-sub">Enter the next dimension of communication.</p>
-            
->>>>>>> parent of e729613 (v4)
-            <div class="auth-avatar-selection">
-                <div class="avatar-preview" id="auth-avatar-preview">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nexus" alt="Profil resmi">
-                </div>
-                <button class="icon-btn-lite" id="refresh-avatar-btn" title="Avatar Değiştir">
-                    <i data-lucide="refresh-cw"></i> Değiştir
-=======
-            <h2>Welcome to Nexus</h2>
-            <p class="auth-sub">Enter the next dimension of communication.</p>
-<<<<<<< HEAD
-            
-            <div class="auth-avatar-selection">
-                <div class="avatar-preview shadow-glow" id="auth-avatar-preview">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nexus" alt="Preview">
-                </div>
-                <button class="icon-btn-lite" id="refresh-avatar-btn" title="Randomize Avatar">
-                    <i data-lucide="refresh-cw"></i>
-<<<<<<< HEAD
->>>>>>> parent of e729613 (v4)
-=======
->>>>>>> parent of e729613 (v4)
-                </button>
-            </div>
-
-=======
->>>>>>> parent of 79b2a38 (V4)
             <div class="form-group">
-<<<<<<< HEAD
-<<<<<<< HEAD
                 <label for="auth-username">KULLANICI ADI</label>
                 <input type="text" id="auth-username" placeholder="kullanici_adi" autocomplete="off" class="glass-input">
             </div>
             <div class="form-group">
                 <label for="auth-password">ŞİFRE</label>
-=======
-                <label>USERNAME</label>
-                <input type="text" id="auth-username" placeholder="Avatar name" autocomplete="off" class="glass-input">
-            </div>
-            <div class="form-group">
-                <label>PASSWORD</label>
->>>>>>> parent of e729613 (v4)
-=======
-                <label>USERNAME</label>
-                <input type="text" id="auth-username" placeholder="Avatar name" autocomplete="off" class="glass-input">
-            </div>
-            <div class="form-group">
-                <label>PASSWORD</label>
->>>>>>> parent of e729613 (v4)
                 <input type="password" id="auth-password" placeholder="••••••••" autocomplete="off" class="glass-input">
             </div>
             <p id="auth-error" class="error-msg"></p>
             <button class="primary-btn full-width" id="login-btn">Giriş Yap</button>
-            <p class="auth-footer-text">
-                Hesabın yok mu? <button id="register-btn" class="link-btn">Kayıt Ol</button>
+            <p class="auth-footer-text">Hesabın yok mu?
+                <button id="show-register-btn" class="link-btn">Kayıt Ol</button>
             </p>
         </div>
->>>>>>> parent of b21c083 (V7)
+
+        <!-- KAYIT EKRANI -->
+        <div class="auth-box glass-panel" id="register-box" style="display:none; width: 440px;">
+            <div class="auth-logo"><i data-lucide="user-plus" class="logo-icon" style="color: var(--accent-green);"></i></div>
+            <h2>Aramıza Katıl</h2>
+            <p class="auth-sub">Kendine bir avatar seç ve maceraya başla.</p>
+            <div class="auth-avatar-selection">
+                <div class="avatar-preview" id="auth-avatar-preview">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nexus" alt="Avatar">
+                </div>
+                <button class="icon-btn-lite" id="refresh-avatar-btn">
+                    <i data-lucide="refresh-cw"></i> Değiştir
+                </button>
+            </div>
+            <div class="form-group">
+                <label for="reg-username">KULLANICI ADI</label>
+                <input type="text" id="reg-username" placeholder="Örn: hyper_user" autocomplete="off" class="glass-input">
+            </div>
+            <div class="form-group">
+                <label for="reg-password">ŞİFRE</label>
+                <input type="password" id="reg-password" placeholder="En az 6 karakter" autocomplete="off" class="glass-input">
+            </div>
+            <p id="reg-error" class="error-msg"></p>
+            <button class="primary-btn full-width" id="register-btn" style="background: linear-gradient(135deg, var(--accent-green), #059669); color: #000;">Hesap Oluştur</button>
+            <p class="auth-footer-text">Zaten hesabın var mı?
+                <button id="show-login-btn" class="link-btn">Giriş Yap</button>
+            </p>
+        </div>
     </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
     <!-- ===== ANA UYGULAMA ===== -->
-=======
-    <!-- Main App Container -->
->>>>>>> parent of e729613 (v4)
-=======
-    <!-- Main App Container -->
->>>>>>> parent of e729613 (v4)
     <div class="app-container" id="app-container" style="display:none;">
         <main class="glass-frame">
             
-            <!-- 1. Server Rail (Nexus Style) -->
+            <!-- 1. Server Rail -->
             <nav class="server-rail">
                 <div class="logo-area" id="nav-home">
                     <i data-lucide="zap" class="logo-icon"></i>
                 </div>
                 <div class="rail-divider"></div>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-<<<<<<< HEAD
-        <button class="rail-btn active" id="nav-friends" data-tooltip="Arkadaşlar" style="position:relative;">
-            <i data-lucide="users"></i>
-            <div class="dm-badge" id="dm-badge" style="display:none;"></div>
-        </button>
-        <div class="rail-divider"></div>
-
-        <div class="server-list" id="dynamic-server-list"></div>
-        <div class="rail-divider"></div>
-
-        <button class="rail-btn" id="nav-add-server" data-tooltip="Sunucu Oluştur">
-            <i data-lucide="plus"></i>
-        </button>
-        <button class="rail-btn" id="nav-join-server" data-tooltip="Davet ile Katıl">
-            <i data-lucide="link-2"></i>
-        </button>
-
-        <div class="rail-spacer"></div>
-
-        <button class="rail-btn" id="nav-notifications" data-tooltip="Bildirimler" style="position:relative;">
-            <i data-lucide="bell"></i>
-            <div class="notification-badge" id="notif-badge" style="display:none;"></div>
-        </button>
-
-        <!-- Ayarlar ikonu (profil resmi üstünde) -->
-        <button class="rail-btn" id="open-settings-btn" data-tooltip="Uygulama Ayarları">
-            <i data-lucide="settings"></i>
-        </button>
-
-        <!-- Profil (tıklanınca profil paneli açılır) -->
-        <div class="user-profile-trigger" id="my-avatar" data-tooltip="Profil & Durum">
-            <img src="" alt="Profil">
-            <span class="my-status-dot" id="my-status-dot"></span>
-        </div>
-    </nav>
-
-    <!-- 2 ─ Kanal Sidebar -->
-    <aside class="channel-sidebar">
-        <header class="sidebar-header">
-            <h2 id="sidebar-context-title">ARKADAŞLAR</h2>
-            <div class="header-actions">
-                <button id="btn-add-friend" class="icon-btn-lite" data-tooltip="Arkadaş Ekle">
-                    <i data-lucide="user-plus"></i>
-                </button>
-            </div>
-        </header>
-        <ul class="channel-list" id="dynamic-channel-list"></ul>
-    </aside>
-
-    <!-- 3 ─ Ana İçerik -->
-    <section class="main-content">
-        <header class="content-header">
-            <div class="header-info">
-                <i id="main-header-icon" data-lucide="users"></i>
-                <h1 id="main-header-title">Nexus</h1>
-            </div>
-            <div class="header-right-actions">
-                <button class="icon-btn-small" id="btn-invite-server" data-tooltip="Davet Linki Kopyala" style="display:none;">
-                    <i data-lucide="share-2"></i>
-                </button>
-                <button class="icon-btn-small" id="btn-server-settings" data-tooltip="Sunucu Ayarları" style="display:none;">
-                    <i data-lucide="settings"></i>
-                </button>
-                <button class="icon-btn-small" id="toggle-members-btn" data-tooltip="Üye Listesi" style="display:none;">
-=======
-                <button class="rail-action-btn tooltip active" id="nav-friends" data-tooltip="Arkadaşlar">
->>>>>>> parent of b21c083 (V7)
-=======
-=======
->>>>>>> parent of e729613 (v4)
-                
-                <!-- Fixed Friends Button -->
-                <button class="rail-action-btn tooltip active" id="nav-friends" data-tooltip="Friends">
->>>>>>> parent of e729613 (v4)
+                <button class="rail-btn active" id="nav-friends" data-tooltip="Arkadaşlar" style="position:relative;">
                     <i data-lucide="users"></i>
+                    <div class="dm-badge" id="dm-badge" style="display:none;"></div>
                 </button>
                 <div class="rail-divider"></div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
                 <div class="server-list" id="dynamic-server-list"></div>
                 <div class="rail-divider"></div>
 
-<<<<<<< HEAD
-            <!-- Hoş geldin ekranı -->
-            <div id="welcome-message" class="welcome-state">
-                <div class="hero-icon"><i data-lucide="zap"></i></div>
-                <h2>Nexus'a Hoş Geldin</h2>
-                <p>Sol taraftan bir arkadaş veya kanal seç.</p>
-            </div>
-
-            <!-- Merkez Sohbet Alanı -->
-            <div id="center-chat-area" class="center-chat-view" style="display:none; flex:1; flex-direction:column; width:100%; height:100%;">
-                <div class="chat-messages" id="chat-messages"></div>
-                <div class="chat-input-area">
-                    <div class="input-wrapper">
-                        <input type="text" id="chat-input" placeholder="Bir kanal seç..." disabled>
-                        <button class="send-btn" id="send-msg-btn"><i data-lucide="send"></i></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Ses kontrolleri -->
-        <div class="voice-controls-panel" id="voice-controls" style="display:none;">
-            <div class="voice-meta">
-                <i data-lucide="radio" style="width:13px;height:13px;color:var(--accent-green);"></i>
-                <span id="active-voice-channel">Ses Kanalı</span>
-            </div>
-            <div class="control-group">
-                <button class="control-btn" id="mic-btn" title="Mikrofon"><i data-lucide="mic"></i></button>
-                <button class="control-btn" id="deafen-btn" title="Ses"><i data-lucide="headphones"></i></button>
-                <button class="control-btn accent" id="screen-share-btn" title="Ekran Paylaş"><i data-lucide="monitor"></i></button>
-                <button class="control-btn leave-btn" id="disconnect-btn" title="Ayrıl"><i data-lucide="phone-off"></i></button>
-            </div>
-        </div>
-
-    </section>
-
-    <!-- 4 ─ Üye Listesi Paneli -->
-    <aside class="members-panel" id="members-panel" style="display:none;">
-        <header class="members-panel-hdr">
-            <span>ÜYELER</span>
-        </header>
-        <div class="members-list" id="members-list"></div>
-    </aside>
-
-    <!-- 5 ─ Sağ Ek Panel (Profil & Özel) -->
-    <aside class="chat-panel" id="right-side-panel" style="display:none;">
-        <header class="chat-header">
-            <h3 id="right-panel-title">Profil</h3>
-        </header>
-        <!-- Arkadaş profil görünümü burada olacak -->
-        <div id="friend-profile-view" class="friend-profile-view" style="display:flex;"></div>
-    </aside>
-
-</main>
-</div>
-
-<!-- ═══ MODAL: Sunucu Oluştur ═══ -->
-<div class="modal-overlay" id="create-server-modal" style="display:none;">
-    <div class="modal-box glass-panel">
-        <div class="modal-icon"><i data-lucide="server"></i></div>
-        <h2>Sunucu Oluştur</h2>
-        <p class="modal-sub">Sunucuna bir isim ver.</p>
-        <input type="text" id="new-server-name" placeholder="Benim Sunucum" class="glass-input" maxlength="20">
-        <div class="modal-actions">
-            <button class="close-modal secondary-btn">İptal</button>
-            <button class="primary-btn" id="confirm-create-server">Oluştur</button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ MODAL: Arkadaş Ekle ═══ -->
-<div class="modal-overlay" id="add-friend-modal" style="display:none;">
-    <div class="modal-box glass-panel">
-        <div class="modal-icon"><i data-lucide="user-plus"></i></div>
-        <h2>Arkadaş Ekle</h2>
-        <p class="modal-sub">Tam kullanıcı adını gir.</p>
-        <div class="friend-input-container">
-            <input type="text" id="new-friend-username" placeholder="kullanici_adi" class="glass-input">
-            <button class="primary-btn" id="confirm-add-friend">Gönder</button>
-        </div>
-        <p id="add-friend-message" class="status-msg"></p>
-        <div class="modal-actions">
-            <button class="close-modal secondary-btn full-width">Kapat</button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ MODAL: Sunucuya Katıl ═══ -->
-<div class="modal-overlay" id="join-server-modal" style="display:none;">
-    <div class="modal-box glass-panel">
-        <div class="modal-icon"><i data-lucide="link-2"></i></div>
-        <h2>Sunucuya Katıl</h2>
-        <p class="modal-sub">Davet linkini veya Sunucu ID'sini yapıştır.</p>
-        <input type="text" id="join-server-link" placeholder="https://... veya abc123xyz" class="glass-input">
-        <div class="modal-actions">
-            <button class="close-modal secondary-btn">İptal</button>
-            <button class="primary-btn" id="confirm-join-server">Katıl</button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ YENİ MODAL: Sunucu Ayarları ═══ -->
-<div class="modal-overlay" id="server-settings-modal" style="display:none;">
-    <div class="modal-box glass-panel" style="max-width:400px;">
-        <div class="modal-icon"><i data-lucide="settings"></i></div>
-        <h2 id="settings-server-name-display">Sunucu Ayarları</h2>
-        
-        <div style="margin: 20px 0; text-align: left;">
-            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Sunucu Adı</label>
-            <input type="text" id="edit-server-name" class="glass-input" style="width:100%; margin-bottom:15px;">
-            
-            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Sunucu İkonu URL</label>
-            <input type="text" id="edit-server-avatar" class="glass-input" style="width:100%; margin-bottom:15px;" placeholder="https://...">
-        </div>
-        
-        <div class="modal-actions" style="margin-top: 25px; display:flex; gap:10px;">
-            <button class="secondary-btn danger" id="btn-leave-server" style="flex:1;">Ayrıl</button>
-            <button class="primary-btn danger" id="btn-delete-server" style="flex:1; background:rgba(239,68,68,0.2) !important; color:var(--text-danger) !important; display:none;">Sil</button>
-            <button class="primary-btn" id="btn-save-server-settings" style="flex:2;">Kaydet</button>
-            <button class="close-modal secondary-btn" style="flex:1;">İptal</button>
-        </div>
-    </div>
-</div>
-
-<!-- ════ KANAL DÜZENLE MODALI ════ -->
-<div class="modal-overlay" id="edit-channel-modal" style="display:none;">
-    <div class="modal-box glass-panel" style="max-width: 400px; text-align: center;">
-        <div class="modal-header">
-            <h3>Kanalı Düzenle</h3>
-            <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
-        </div>
-        <div style="margin: 20px 0; text-align: left;">
-            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kanal Adı</label>
-            <input type="text" id="edit-ch-name" class="glass-input" style="width:100%; margin-bottom:15px;">
-            
-            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kullanıcı Limiti (0 = Sınırsız)</label>
-            <input type="number" id="edit-ch-limit" class="glass-input" style="width:100%;" min="0" max="99">
-        </div>
-        <div class="modal-actions" style="margin-top: 25px; display:flex; gap:10px;">
-            <button class="primary-btn danger" id="btn-delete-channel" style="flex:1; background:rgba(239,68,68,0.2) !important; color:var(--text-danger) !important;">Kanalı Sil</button>
-            <button class="primary-btn" id="btn-save-channel-settings" style="flex:2;">Degişiklikleri Kaydet</button>
-        </div>
-    </div>
-</div>
-
-
-<!-- ═══ YENİ MODAL: Ses Kanalı Oluştur ═══ -->
-<div class="modal-overlay" id="create-voice-modal" style="display:none;">
-    <div class="modal-box glass-panel">
-        <div class="modal-icon"><i data-lucide="plus"></i></div>
-        <h2>Ses Kanalı Oluştur</h2>
-        
-        <div style="margin: 20px 0; text-align: left;">
-            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kanal Adı</label>
-            <input type="text" id="new-voice-name" placeholder="yeni-kanal" class="glass-input" style="width:100%; margin-bottom:15px;">
-            
-            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; display:block;">Kişi Limiti (İsteğe Bağlı)</label>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <input type="number" id="new-voice-limit" placeholder="Limit Yok" class="glass-input" min="2" max="99" style="width:100px;">
-                <span style="font-size:12px; color:var(--text-secondary);">kullanıcı (0 veya boş limit yok demektir)</span>
-            </div>
-        </div>
-        
-        <div class="modal-actions" style="margin-top: 25px;">
-            <button class="close-modal secondary-btn">İptal</button>
-            <button class="primary-btn" id="confirm-create-voice">Oluştur</button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ PANEL: Bildirimler ═══ -->
-<div class="modal-overlay" id="notif-panel" style="display:none;">
-    <div class="modal-box glass-panel notif-box">
-        <header class="notif-header">
-            <h2>Bildirimler</h2>
-            <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
-        </header>
-        <div class="notif-list" id="notif-list">
-            <div class="no-notif">Yeni bildirim yok</div>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ PANEL: Profil Ayarları ═══ -->
-<div class="modal-overlay" id="profile-panel" style="display:none;">
-    <div class="modal-box glass-panel profile-panel-box">
-        <header class="pp-header">
-            <h2><i data-lucide="user" style="width:18px;height:18px;"></i> Profil Ayarları</h2>
-            <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
-        </header>
-
-        <!-- Profil kartı -->
-        <div class="pp-profile-card">
-            <div style="position:relative;">
-                <img id="pp-avatar" src="" alt="" class="pp-avatar">
-                <button class="icon-btn-lite avatar-change-btn" id="pp-refresh-avatar" data-tooltip="Avatar Yenile"
-                        style="position:absolute; bottom:0; right:0; padding:4px; border-radius:50%; background:var(--accent-purple); border:2px solid var(--app-bg);">
-                    <i data-lucide="refresh-cw" style="width:12px; height:12px;"></i>
-                </button>
-            </div>
-            <div>
-                <div id="pp-username" class="pp-uname">Kullanıcı</div>
-                <div class="pp-since">Nexus üyesi</div>
-            </div>
-        </div>
-
-
-        <!-- Durum -->
-        <div class="pp-section">
-            <div class="pp-section-label">DURUM</div>
-            <div class="status-options">
-                <button class="status-option" data-status="online">
-                    <span class="status-opt-dot" style="background:var(--accent-green);"></span> Çevrimiçi
-                </button>
-                <button class="status-option" data-status="invisible">
-                    <span class="status-opt-dot" style="background:#607d8b;"></span> Görünmez
-                </button>
-            </div>
-        </div>
-
-        <!-- İsim değiştir -->
-        <div class="pp-section">
-            <div class="pp-section-label">KULLANICI ADINI DEĞİŞTİR</div>
-            <div class="pp-row">
-                <input type="text" id="pp-new-username" placeholder="Yeni kullanıcı adı" class="glass-input">
-                <button class="primary-btn" id="pp-save-username">Kaydet</button>
-            </div>
-        </div>
-
-        <!-- Şifre değiştir -->
-        <div class="pp-section">
-            <div class="pp-section-label">ŞİFRE DEĞİŞTİR</div>
-            <input type="password" id="pp-current-pw" placeholder="Mevcut şifre" class="glass-input" style="margin-bottom:8px;">
-            <input type="password" id="pp-new-pw" placeholder="Yeni şifre (min 6 karakter)" class="glass-input" style="margin-bottom:8px;">
-            <input type="password" id="pp-confirm-pw" placeholder="Yeni şifre tekrar" class="glass-input" style="margin-bottom:10px;">
-            <button class="primary-btn full-width" id="pp-save-password">Şifreyi Güncelle</button>
-        </div>
-
-        <p id="pp-msg" class="status-msg" style="text-align:center;margin:0 24px;"></p>
-
-        <div class="pp-section" style="padding-top:0;">
-            <button id="pp-logout-btn" class="logout-btn" style="margin-bottom:10px;">
-                <i data-lucide="log-out"></i> Çıkış Yap
-            </button>
-            <button id="pp-delete-account-btn" class="logout-btn" style="background:rgba(239,68,68,0.1); color:var(--text-danger); border:1px solid rgba(239,68,68,0.2);">
-                <i data-lucide="trash-2"></i> Hesabımı Sil
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ YENİ MODAL: Başka Kullanıcı Profil ═══ -->
-<div class="modal-overlay" id="member-profile-modal" style="display:none;">
-    <div class="modal-box glass-panel profile-panel-box">
-        <header class="pp-header">
-            <h2><i data-lucide="user" style="width:18px;height:18px;"></i> Kullanıcı Profili</h2>
-            <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
-        </header>
-
-        <div class="pp-profile-card">
-            <img id="mp-avatar" src="" alt="" class="pp-avatar">
-            <div>
-                <div id="mp-username" class="pp-uname">Kullanıcı</div>
-                <div class="pp-since">Nexus üyesi</div>
-            </div>
-        </div>
-
-        <div class="pp-section" style="display:flex; flex-direction:column; gap:8px;">
-            <button class="primary-btn full-width" id="mp-add-friend-btn">
-                <i data-lucide="user-plus"></i> Arkadaşlık Gönder
-            </button>
-            <button class="secondary-btn full-width" id="mp-mutual-friends-btn" style="justify-content:space-between;">
-                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="users"></i> Ortak Arkadaşlar</span>
-                <i data-lucide="chevron-right" style="width:14px; opacity:0.5;"></i>
-            </button>
-            <button class="secondary-btn full-width" id="mp-mutual-servers-btn" style="justify-content:space-between;">
-                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="server"></i> Ortak Sunucular</span>
-                <i data-lucide="chevron-right" style="width:14px; opacity:0.5;"></i>
-            </button>
-        </div>
-=======
-                <button class="rail-action-btn tooltip" id="nav-add-server" data-tooltip="Sunucu Oluştur">
+                <button class="rail-btn" id="nav-add-server" data-tooltip="Sunucu Oluştur">
                     <i data-lucide="plus"></i>
                 </button>
-                <button class="rail-action-btn tooltip" id="nav-join-server" data-tooltip="Davet ile Katıl">
+                <button class="rail-btn" id="nav-join-server" data-tooltip="Davet ile Katıl">
                     <i data-lucide="link-2"></i>
-=======
-=======
->>>>>>> parent of 79b2a38 (V4)
-                <div class="server-list" id="dynamic-server-list">
-                    <!-- Dynamic Servers -->
-                </div>
-                <div class="rail-divider"></div>
-=======
-                <div class="server-list" id="dynamic-server-list">
-                    <!-- Dynamic Servers -->
-                </div>
-                <div class="rail-divider"></div>
->>>>>>> parent of e729613 (v4)
-                <button class="rail-action-btn tooltip" id="nav-add-server" data-tooltip="Add Server">
-                    <i data-lucide="plus"></i>
                 </button>
-                <button class="rail-action-btn tooltip" id="nav-join-server" data-tooltip="Join via Invite">
-                    <i data-lucide="link"></i>
-<<<<<<< HEAD
->>>>>>> parent of e729613 (v4)
-                </button>
+
                 <div class="rail-spacer"></div>
 
-<<<<<<< HEAD
-                <button class="rail-action-btn tooltip" id="nav-notifications" data-tooltip="Bildirimler" style="position:relative;">
-=======
-                <!-- Notifications Button -->
-                <button class="rail-action-btn tooltip" id="nav-notifications" data-tooltip="Notifications">
->>>>>>> parent of e729613 (v4)
-=======
-                </button>
-                <div class="rail-spacer"></div>
-<<<<<<< HEAD
-
-                <!-- Notifications Button -->
-                <button class="rail-action-btn tooltip" id="nav-notifications" data-tooltip="Notifications">
->>>>>>> parent of e729613 (v4)
+                <button class="rail-btn" id="nav-notifications" data-tooltip="Bildirimler" style="position:relative;">
                     <i data-lucide="bell"></i>
                     <div class="notification-badge" id="notif-badge" style="display:none;"></div>
                 </button>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-                <div class="user-profile-trigger" title="Profil &amp; Ayarlar">
-                    <div class="avatar-small" id="my-avatar">
-                        <img src="" alt="Kullanıcı avatarı">
-=======
-                <div class="user-profile-trigger">
-                    <div class="avatar-small shadow-glow" id="my-avatar">
-                        <img src="" alt="User">
->>>>>>> parent of e729613 (v4)
-=======
-                <div class="user-profile-trigger">
-                    <div class="avatar-small shadow-glow" id="my-avatar">
-                        <img src="" alt="User">
->>>>>>> parent of e729613 (v4)
-=======
-                <div class="user-profile-trigger">
-                    <div class="avatar-small shadow-glow" id="my-avatar">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
->>>>>>> parent of 79b2a38 (V4)
-                        <div class="status-dot"></div>
-                    </div>
-                    <span id="my-username-display" style="display:none;">User</span>
+                <div class="user-profile-trigger" id="my-avatar" data-tooltip="Profil & Durum">
+                    <img src="" alt="Profil">
+                    <span class="my-status-dot" id="my-status-dot"></span>
                 </div>
             </nav>
 
-            <!-- 2. Channel Sidebar -->
+            <!-- 2 ─ Kanal Sidebar -->
             <aside class="channel-sidebar">
                 <header class="sidebar-header">
-                    <h2 id="sidebar-context-title">FRIENDS</h2>
-<<<<<<< HEAD
+                    <h2 id="sidebar-context-title">ARKADAŞLAR</h2>
                     <div class="header-actions">
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        <button id="btn-invite-server" class="icon-btn-lite tooltip" data-tooltip="Davet Linkini Kopyala" style="display:none;" title="Davet Linkini Kopyala">
-                            <i data-lucide="share-2"></i>
-                        </button>
-                        <button id="btn-add-friend" class="icon-btn-lite tooltip" data-tooltip="Arkadaş Ekle" title="Arkadaş Ekle">
-=======
-                        <button id="btn-invite-server" class="icon-btn-lite tooltip" data-tooltip="Invite Link" style="display:none;">
-                            <i data-lucide="user-plus"></i>
-                        </button>
-=======
-                        <button id="btn-invite-server" class="icon-btn-lite tooltip" data-tooltip="Invite Link" style="display:none;">
-                            <i data-lucide="user-plus"></i>
-                        </button>
->>>>>>> parent of e729613 (v4)
-                        <button id="btn-add-friend" class="icon-btn-lite tooltip" data-tooltip="Add Friend">
->>>>>>> parent of e729613 (v4)
+                        <button id="btn-add-friend" class="icon-btn-lite" data-tooltip="Arkadaş Ekle">
                             <i data-lucide="user-plus"></i>
                         </button>
                     </div>
-=======
-                    <button id="btn-add-friend" class="icon-btn-lite"><i data-lucide="user-plus"></i></button>
->>>>>>> parent of 79b2a38 (V4)
                 </header>
-                <ul class="channel-list" id="dynamic-channel-list">
-                    <!-- Dynamic Channels -->
-                </ul>
+                <ul class="channel-list" id="dynamic-channel-list"></ul>
                 <div class="sidebar-footer">
                     <button class="settings-trigger" id="open-settings-btn">
                         <i data-lucide="settings"></i> <span>Ayarlar</span>
@@ -657,263 +127,190 @@
                 </div>
             </aside>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-            <!-- 3. Main Content -->
-=======
-            <!-- 3. Main Center Area -->
->>>>>>> parent of e729613 (v4)
-=======
-            <!-- 3. Main Center Area -->
->>>>>>> parent of e729613 (v4)
-=======
-            <!-- 3. Main Center Area (Voice Room / Welcome) -->
->>>>>>> parent of 79b2a38 (V4)
+            <!-- 3 ─ Ana İçerik -->
             <section class="main-content">
                 <header class="content-header">
                     <div class="header-info">
                         <i id="main-header-icon" data-lucide="users"></i>
                         <h1 id="main-header-title">Nexus</h1>
                     </div>
+                    <div class="header-right-actions">
+                        <button class="icon-btn-small" id="btn-invite-server" data-tooltip="Davet Linki Kopyala" style="display:none;">
+                            <i data-lucide="share-2"></i>
+                        </button>
+                        <button class="icon-btn-small" id="btn-server-settings" data-tooltip="Sunucu Ayarları" style="display:none;">
+                            <i data-lucide="settings"></i>
+                        </button>
+                        <button class="icon-btn-small" id="toggle-members-btn" data-tooltip="Üye Listesi" style="display:none;">
+                             <i data-lucide="layout-sidebar-right"></i>
+                        </button>
+                    </div>
                 </header>
 
                 <div class="view-container">
-<<<<<<< HEAD
-<<<<<<< HEAD
+                    <!-- Ses Alanı Grid -->
                     <div id="voice-grid" class="voice-grid" style="display:none;"></div>
+                    
+                    <!-- Hoş geldin ekranı -->
                     <div id="welcome-message" class="welcome-state">
-                        <div class="hero-icon"><i data-lucide="message-square"></i></div>
-                        <h2>Konuşmayı Başlat</h2>
-                        <p>Bir arkadaş veya sunucu kanalı seçerek iletişime geç.</p>
-=======
-=======
->>>>>>> parent of e729613 (v4)
-                    <!-- Voice Room Grid -->
-                    <div id="voice-grid" class="voice-grid" style="display:none;">
-                        <!-- User Cards -->
+                        <div class="hero-icon"><i data-lucide="zap"></i></div>
+                        <h2>Nexus'a Hoş Geldin</h2>
+                        <p>Sol taraftan bir arkadaş veya kanal seç.</p>
                     </div>
 
-                    <!-- Welcome / Null State -->
-                    <div id="welcome-message" class="welcome-state">
-                        <div class="hero-icon"><i data-lucide="message-square"></i></div>
-                        <h2>Begin the Conversation</h2>
-                        <p>Select a server or friend to start connecting.</p>
-<<<<<<< HEAD
->>>>>>> parent of e729613 (v4)
-=======
->>>>>>> parent of e729613 (v4)
+                    <!-- Merkez Sohbet Alanı -->
+                    <div id="center-chat-area" class="center-chat-view" style="display:none; flex:1; flex-direction:column; width:100%; height:100%;">
+                        <div class="chat-messages" id="chat-messages"></div>
+                        <div class="chat-input-area">
+                            <div class="input-wrapper">
+                                <input type="text" id="chat-input" placeholder="Bir kanal seç..." disabled>
+                                <button class="send-btn" id="send-msg-btn"><i data-lucide="send"></i></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-<<<<<<< HEAD
-                <!-- Voice Controls Bar -->
+                <!-- Ses kontrolleri -->
                 <div class="voice-controls-panel" id="voice-controls" style="display:none;">
-=======
-                <!-- Floating Voice Controls (Always present if in voice) -->
-                <div class="voice-controls-panel shadow-glow" id="voice-controls" style="display:none;">
->>>>>>> parent of 79b2a38 (V4)
                     <div class="voice-meta">
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        <i data-lucide="radio" style="width:14px;height:14px;color:var(--accent-green);"></i>
+                        <i data-lucide="radio" style="width:13px;height:13px;color:var(--accent-green);"></i>
                         <span id="active-voice-channel">Ses Kanalı</span>
                     </div>
                     <div class="control-group">
-                        <button class="control-btn" id="mic-btn" title="Mikrofonu Aç/Kapat">
-                            <i data-lucide="mic"></i>
-                        </button>
-                        <button class="control-btn" id="deafen-btn" title="Sesi Aç/Kapat">
-                            <i data-lucide="headphones"></i>
-                        </button>
-                        <button class="control-btn accent" id="screen-share-btn" title="Ekran Paylaş">
-                            <i data-lucide="monitor"></i>
-                        </button>
-                        <button class="control-btn leave-btn" id="disconnect-btn" title="Ses Kanalından Ayrıl">
-                            <i data-lucide="phone-off"></i>
-                        </button>
-=======
-=======
->>>>>>> parent of e729613 (v4)
-                        <span id="active-voice-channel">Voice Channel</span>
-                    </div>
-                    <div class="control-group">
-                        <button class="control-btn" id="mic-btn" title="Toggle Mic"><i data-lucide="mic"></i></button>
-                        <button class="control-btn" id="deafen-btn" title="Deafen"><i data-lucide="headphones"></i></button>
-                        <button class="control-btn accent" id="screen-share-btn" title="Share Screen"><i data-lucide="monitor"></i></button>
-                        <button class="control-btn leave-btn" id="disconnect-btn" title="Disconnect"><i data-lucide="log-out"></i></button>
-<<<<<<< HEAD
->>>>>>> parent of e729613 (v4)
-=======
->>>>>>> parent of e729613 (v4)
+                        <button class="control-btn" id="mic-btn" title="Mikrofon"><i data-lucide="mic"></i></button>
+                        <button class="control-btn" id="deafen-btn" title="Ses"><i data-lucide="headphones"></i></button>
+                        <button class="control-btn accent" id="screen-share-btn" title="Ekran Paylaş"><i data-lucide="monitor"></i></button>
+                        <button class="control-btn leave-btn" id="disconnect-btn" title="Ayrıl"><i data-lucide="phone-off"></i></button>
                     </div>
                 </div>
             </section>
 
-            <!-- 4. Persistent Chat Panel (Right) -->
-            <aside id="chat-panel" class="chat-panel">
-                <header class="chat-header">
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    <h3 id="chat-panel-title">Sohbet</h3>
-=======
-                    <h3 id="chat-panel-title">Channel Chat</h3>
->>>>>>> parent of e729613 (v4)
-=======
-                    <h3 id="chat-panel-title">Channel Chat</h3>
->>>>>>> parent of e729613 (v4)
-=======
-                    <h3>Channel Chat</h3>
->>>>>>> parent of 79b2a38 (V4)
+            <!-- 4 ─ Üye Listesi Paneli -->
+            <aside class="members-panel" id="members-panel" style="display:none;">
+                <header class="members-panel-hdr">
+                    <span>ÜYELER</span>
                 </header>
-                <div class="chat-messages" id="chat-messages">
-                    <!-- Messages -->
-                </div>
-                <div class="chat-input-area">
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    <div class="input-wrapper">
-                        <input type="text" id="chat-input" placeholder="Bir kanal seç..." disabled>
-                        <button class="send-btn" id="send-msg-btn" title="Gönder">
-                            <i data-lucide="send"></i>
-                        </button>
-=======
-                    <div class="input-wrapper shadow-glow">
-                        <input type="text" id="chat-input" placeholder="Message..." disabled>
-                        <button class="send-btn" id="send-msg-btn"><i data-lucide="send"></i></button>
->>>>>>> parent of e729613 (v4)
-=======
-                    <div class="input-wrapper shadow-glow">
-                        <input type="text" id="chat-input" placeholder="Message..." disabled>
-                        <button class="send-btn" id="send-msg-btn"><i data-lucide="send"></i></button>
->>>>>>> parent of e729613 (v4)
-                    </div>
-                </div>
+                <div class="members-list" id="members-list"></div>
+            </aside>
+
+            <!-- 5 ─ Sağ Ek Panel (Profil & Özel) -->
+            <aside class="chat-panel" id="right-side-panel" style="display:none;">
+                <header class="chat-header">
+                    <h3 id="right-panel-title">Profil</h3>
+                </header>
+                <div id="friend-profile-view" class="friend-profile-view" style="display:flex;"></div>
             </aside>
 
         </main>
     </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    <!-- ===== MODAL: Sunucu Oluştur ===== -->
+    <!-- ═══ MODAL: Sunucu Oluştur ═══ -->
     <div class="modal-overlay" id="create-server-modal" style="display:none;">
         <div class="modal-box glass-panel">
             <div class="modal-icon"><i data-lucide="server"></i></div>
             <h2>Sunucu Oluştur</h2>
-            <p class="modal-sub">Sunucuna bir isim ver ve arkadaşlarını davet et.</p>
-            <input type="text" id="new-server-name" placeholder="Süper Sunucum" class="glass-input">
-=======
-=======
->>>>>>> parent of e729613 (v4)
-    <!-- Modals -->
-    <div class="modal-overlay" id="create-server-modal" style="display:none;">
-        <div class="modal-box glass-panel shadow-glow">
-            <h2>Create Server</h2>
-            <input type="text" id="new-server-name" placeholder="Server Name" class="glass-input">
-<<<<<<< HEAD
->>>>>>> parent of e729613 (v4)
-=======
->>>>>>> parent of e729613 (v4)
+            <p class="modal-sub">Sunucuna bir isim ver.</p>
+            <input type="text" id="new-server-name" placeholder="Benim Sunucum" class="glass-input" maxlength="20">
             <div class="modal-actions">
-<<<<<<< HEAD
                 <button class="close-modal secondary-btn">İptal</button>
                 <button class="primary-btn" id="confirm-create-server">Oluştur</button>
-=======
-                <button class="close-modal">Cancel</button>
-                <button class="primary-btn" id="confirm-create-server">Create</button>
->>>>>>> parent of 79b2a38 (V4)
             </div>
         </div>
     </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    <!-- ===== MODAL: Arkadaş Ekle ===== -->
+    <!-- ═══ MODAL: Arkadaş Ekle ═══ -->
     <div class="modal-overlay" id="add-friend-modal" style="display:none;">
         <div class="modal-box glass-panel">
             <div class="modal-icon"><i data-lucide="user-plus"></i></div>
             <h2>Arkadaş Ekle</h2>
-            <p class="modal-sub">Arkadaşının tam kullanıcı adını gir.</p>
+            <p class="modal-sub">Tam kullanıcı adını gir.</p>
             <div class="friend-input-container">
                 <input type="text" id="new-friend-username" placeholder="kullanici_adi" class="glass-input">
                 <button class="primary-btn" id="confirm-add-friend">Gönder</button>
-=======
-=======
->>>>>>> parent of e729613 (v4)
-    <div class="modal-overlay" id="add-friend-modal" style="display:none;">
-        <div class="modal-box glass-panel shadow-glow">
-<<<<<<< HEAD
-            <h2>Find Friends</h2>
-            <p class="modal-sub">Enter the username of the person you want to connect with.</p>
-            <div class="friend-input-container">
-                <input type="text" id="new-friend-username" placeholder="Search by username..." class="glass-input">
-                <button class="primary-btn" id="confirm-add-friend">Send Request</button>
-<<<<<<< HEAD
->>>>>>> parent of e729613 (v4)
-=======
->>>>>>> parent of e729613 (v4)
             </div>
             <p id="add-friend-message" class="status-msg"></p>
             <div class="modal-actions">
                 <button class="close-modal secondary-btn full-width">Kapat</button>
-=======
-            <h2>Add Friend</h2>
-            <input type="text" id="new-friend-username" placeholder="Username" class="glass-input">
-            <p id="add-friend-message" class="error-msg"></p>
-            <div class="modal-actions">
-                <button class="close-modal">Cancel</button>
-                <button class="primary-btn" id="confirm-add-friend">Send Request</button>
->>>>>>> parent of 79b2a38 (V4)
             </div>
         </div>
     </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    <!-- ===== MODAL: Sunucuya Katıl ===== -->
+    <!-- ═══ MODAL: Sunucuya Katıl ═══ -->
     <div class="modal-overlay" id="join-server-modal" style="display:none;">
         <div class="modal-box glass-panel">
             <div class="modal-icon"><i data-lucide="link-2"></i></div>
             <h2>Sunucuya Katıl</h2>
             <p class="modal-sub">Davet linkini veya Sunucu ID'sini yapıştır.</p>
-            <input type="text" id="join-server-link" placeholder="Davet linki veya ID" class="glass-input">
-=======
-=======
->>>>>>> parent of e729613 (v4)
-    <div class="modal-overlay" id="join-server-modal" style="display:none;">
-        <div class="modal-box glass-panel shadow-glow">
-            <h2>Join Server</h2>
-<<<<<<< HEAD
-            <input type="text" id="join-server-link" placeholder="Enter Invite ID" class="glass-input">
-<<<<<<< HEAD
->>>>>>> parent of e729613 (v4)
-=======
->>>>>>> parent of e729613 (v4)
+            <input type="text" id="join-server-link" placeholder="https://... veya abc123xyz" class="glass-input">
             <div class="modal-actions">
                 <button class="close-modal secondary-btn">İptal</button>
                 <button class="primary-btn" id="confirm-join-server">Katıl</button>
-=======
-            <input type="text" id="join-server-link" placeholder="Invite Link" class="glass-input">
-            <div class="modal-actions">
-                <button class="close-modal">Cancel</button>
-                <button class="primary-btn" id="confirm-join-server">Join</button>
->>>>>>> parent of 79b2a38 (V4)
             </div>
         </div>
     </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    <!-- ===== PANEL: Bildirimler ===== -->
-=======
-    <!-- Notifications Panel (Overlay but scoped) -->
->>>>>>> parent of e729613 (v4)
-=======
-    <!-- Notifications Panel (Overlay but scoped) -->
->>>>>>> parent of e729613 (v4)
+    <!-- ═══ MODAL: Sunucu Ayarları ═══ -->
+    <div class="modal-overlay" id="server-settings-modal" style="display:none;">
+        <div class="modal-box glass-panel" style="max-width:400px;">
+            <div class="modal-icon"><i data-lucide="settings"></i></div>
+            <h2 id="settings-server-name-display">Sunucu Ayarları</h2>
+            <div style="margin: 20px 0; text-align: left;">
+                <label class="form-label">Sunucu Adı</label>
+                <input type="text" id="edit-server-name" class="glass-input" style="width:100%; margin-bottom:15px;">
+                <label class="form-label">Sunucu İkonu URL</label>
+                <input type="text" id="edit-server-avatar" class="glass-input" style="width:100%; margin-bottom:15px;" placeholder="https://...">
+            </div>
+            <div class="modal-actions" style="margin-top: 25px; display:flex; gap:10px;">
+                <button class="secondary-btn danger" id="btn-leave-server" style="flex:1;">Ayrıl</button>
+                <button class="primary-btn danger" id="btn-delete-server" style="flex:1; background:rgba(239,68,68,0.2) !important; color:var(--text-danger) !important; display:none;">Sil</button>
+                <button class="primary-btn" id="btn-save-server-settings" style="flex:2;">Kaydet</button>
+                <button class="close-modal secondary-btn" style="flex:1;">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════ KANAL DÜZENLE MODALI ════ -->
+    <div class="modal-overlay" id="edit-channel-modal" style="display:none;">
+        <div class="modal-box glass-panel" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3>Kanalı Düzenle</h3>
+                <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
+            </div>
+            <div style="margin: 20px 0; text-align: left;">
+                <label class="form-label">Kanal Adı</label>
+                <input type="text" id="edit-ch-name" class="glass-input" style="width:100%; margin-bottom:15px;">
+                <label class="form-label">Kullanıcı Limiti (0 = Sınırsız)</label>
+                <input type="number" id="edit-ch-limit" class="glass-input" style="width:100%;" min="0" max="99">
+            </div>
+            <div class="modal-actions" style="margin-top: 25px; display:flex; gap:10px;">
+                <button class="primary-btn danger" id="btn-delete-channel" style="flex:1; background:rgba(239,68,68,0.2) !important; color:var(--text-danger) !important;">Kanalı Sil</button>
+                <button class="primary-btn" id="btn-save-channel-settings" style="flex:2;">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ MODAL: Ses Kanalı Oluştur ═══ -->
+    <div class="modal-overlay" id="create-voice-modal" style="display:none;">
+        <div class="modal-box glass-panel">
+            <div class="modal-icon"><i data-lucide="plus"></i></div>
+            <h2>Ses Kanalı Oluştur</h2>
+            <div style="margin: 20px 0; text-align: left;">
+                <label class="form-label">Kanal Adı</label>
+                <input type="text" id="new-voice-name" placeholder="yeni-kanal" class="glass-input" style="width:100%; margin-bottom:15px;">
+                <label class="form-label">Kişi Limiti (İsteğe Bağlı)</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="number" id="new-voice-limit" placeholder="Limit Yok" class="glass-input" min="2" max="99" style="width:100px;">
+                    <span style="font-size:12px; color:var(--text-secondary);">kullanıcı</span>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top: 25px;">
+                <button class="close-modal secondary-btn">İptal</button>
+                <button class="primary-btn" id="confirm-create-voice">Oluştur</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ PANEL: Bildirimler ═══ -->
     <div class="modal-overlay" id="notif-panel" style="display:none;">
         <div class="modal-box glass-panel notif-box">
             <header class="notif-header">
@@ -921,228 +318,146 @@
                 <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
             </header>
             <div class="notif-list" id="notif-list">
-<<<<<<< HEAD
-<<<<<<< HEAD
                 <div class="no-notif">Yeni bildirim yok</div>
-=======
-=======
->>>>>>> parent of e729613 (v4)
-                <!-- Notifications here -->
-                <div class="no-notif">No new notifications</div>
->>>>>>> parent of e729613 (v4)
             </div>
         </div>
     </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    <!-- ===== MODAL: Ayarlar ===== -->
-    <div class="modal-overlay" id="settings-modal" style="display:none;">
-        <div class="modal-box glass-panel settings-box">
-            <header class="settings-header">
-                <h2><i data-lucide="settings" style="width:20px;height:20px;"></i> Ayarlar</h2>
+    <!-- ═══ PANEL: Profil Ayarları ═══ -->
+    <div class="modal-overlay" id="profile-panel" style="display:none;">
+        <div class="modal-box glass-panel profile-panel-box">
+            <header class="pp-header">
+                <h2><i data-lucide="user" style="width:18px;height:18px;"></i> Profil Ayarları</h2>
                 <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
             </header>
-
-            <!-- Profil Bölümü -->
-            <div class="settings-section">
-                <div class="settings-label">PROFİL</div>
-                <div class="settings-profile-card">
-                    <img id="settings-avatar" src="" alt="Profil" class="settings-avatar-img">
-                    <div>
-                        <div class="settings-username" id="settings-username">Kullanıcı</div>
-                        <div class="settings-status"><span class="online-dot"></span> Çevrimiçi</div>
-                    </div>
+            <div class="pp-profile-card">
+                <div style="position:relative;">
+                    <img id="pp-avatar" src="" alt="" class="pp-avatar">
+                    <button class="icon-btn-lite avatar-change-btn" id="pp-refresh-avatar" data-tooltip="Avatar Yenile">
+                        <i data-lucide="refresh-cw" style="width:12px; height:12px;"></i>
+                    </button>
+                </div>
+                <div>
+                    <div id="pp-username" class="pp-uname">Kullanıcı</div>
+                    <div class="pp-since">Nexus üyesi</div>
                 </div>
             </div>
-
-            <!-- Ses Ayarları -->
-            <div class="settings-section">
-                <div class="settings-label">SES AYARLARI</div>
-                <div class="settings-row">
-                    <label for="settings-mic-select">
-                        <i data-lucide="mic" style="width:14px;height:14px;"></i> Mikrofon
-                    </label>
-                    <select id="settings-mic-select" class="settings-select glass-input">
-                        <option>Varsayılan Mikrofon</option>
-                    </select>
-                </div>
-                <div class="settings-row">
-                    <label for="settings-volume">
-                        <i data-lucide="volume-2" style="width:14px;height:14px;"></i>
-                        Hoparlör Sesi <span id="settings-volume-label" style="color:var(--accent-cyan);">100%</span>
-                    </label>
-                    <input type="range" id="settings-volume" min="0" max="100" value="100" class="settings-slider">
+            <div class="pp-section">
+                <div class="pp-section-label">DURUM</div>
+                <div class="status-options">
+                    <button class="status-option" data-status="online">
+                        <span class="status-opt-dot" style="background:var(--accent-green);"></span> Çevrimiçi
+                    </button>
+                    <button class="status-option" data-status="invisible">
+                        <span class="status-opt-dot" style="background:#607d8b;"></span> Görünmez
+                    </button>
                 </div>
             </div>
-
-            <!-- Görünüm -->
-            <div class="settings-section">
-                <div class="settings-label">GÖRÜNÜM</div>
-                <div class="settings-row">
-                    <label>Tema</label>
-                    <button id="settings-theme-toggle" class="secondary-btn" style="padding:8px 16px;font-size:13px;">☀️ Açık Mod</button>
+            <div class="pp-section">
+                <div class="pp-section-label">KULLANICI ADI</div>
+                <div class="pp-row">
+                    <input type="text" id="pp-new-username" placeholder="Yeni kullanıcı adı" class="glass-input">
+                    <button class="primary-btn" id="pp-save-username">Kaydet</button>
                 </div>
             </div>
-
-            <!-- Çıkış -->
-            <div class="settings-section">
-                <button id="settings-logout-btn" class="logout-btn">
+            <div class="pp-section">
+                <div class="pp-section-label">ŞİFRE DEĞİŞTİR</div>
+                <input type="password" id="pp-current-pw" placeholder="Mevcut şifre" class="glass-input" style="margin-bottom:8px;">
+                <input type="password" id="pp-new-pw" placeholder="Yeni şifre" class="glass-input" style="margin-bottom:8px;">
+                <input type="password" id="pp-confirm-pw" placeholder="Yeni şifre tekrar" class="glass-input" style="margin-bottom:10px;">
+                <button class="primary-btn full-width" id="pp-save-password">Güncelle</button>
+            </div>
+            <p id="pp-msg" class="status-msg"></p>
+            <div class="pp-section" style="padding-top:0;">
+                <button id="pp-logout-btn" class="logout-btn">
                     <i data-lucide="log-out"></i> Çıkış Yap
+                </button>
+                <button id="pp-delete-account-btn" class="logout-btn danger-text">
+                    <i data-lucide="trash-2"></i> Hesabımı Sil
                 </button>
             </div>
         </div>
->>>>>>> parent of b21c083 (V7)
     </div>
 
-    <!-- Voice Card Template -->
-=======
-=======
->>>>>>> parent of 79b2a38 (V4)
-    <!-- Voice card template -->
->>>>>>> parent of e729613 (v4)
-=======
-    <!-- Voice card template -->
->>>>>>> parent of e729613 (v4)
-    <template id="user-card-template">
-        <div class="voice-card" data-peer-id="">
-            <div class="avatar-ring speaker-active">
-                <div class="sound-wave"></div>
-                <div class="sound-wave"></div>
-                <div class="avatar-circle"></div>
-                <audio autoplay></audio>
-                <video class="screen-view" autoplay playsinline style="display:none;"></video>
-            </div>
-            <span class="user-label">Kullanıcı</span>
-            <div class="card-indicators">
-                <i class="fa-solid fa-microphone-slash mic-muted-icon" style="display:none;"></i>
-<<<<<<< HEAD
-            </div>
-            <div class="settings-row">
-                <label><i data-lucide="mic-2" style="width:13px;height:13px;"></i> Çıkış Testi</label>
-                <div class="mic-test-bar">
-                    <div id="as-mic-test-level" style="width: 0%; height: 6px; background: var(--accent-green); border-radius: 3px; transition: width 0.1s ease;"></div>
+    <!-- ═══ YENİ MODAL: Başka Kullanıcı Profil ═══ -->
+    <div class="modal-overlay" id="member-profile-modal" style="display:none;">
+        <div class="modal-box glass-panel profile-panel-box">
+            <header class="pp-header">
+                <h2><i data-lucide="user" style="width:18px;height:18px;"></i> Kullanıcı Profili</h2>
+                <button class="close-modal icon-btn-lite"><i data-lucide="x"></i></button>
+            </header>
+            <div class="pp-profile-card">
+                <img id="mp-avatar" src="" alt="" class="pp-avatar">
+                <div>
+                    <div id="mp-username" class="pp-uname">Kullanıcı</div>
+                    <div class="pp-since">Nexus üyesi</div>
                 </div>
             </div>
-            <div class="settings-row">
-                <label><i data-lucide="sliders" style="width:13px;height:13px;"></i>
-                    Giriş Sesi <span id="as-mic-vol-label" style="color:var(--accent-cyan);">100%</span>
-                </label>
-                <input type="range" id="as-mic-vol" min="0" max="150" value="100" class="settings-slider">
+            <div class="pp-section" style="display:flex; flex-direction:column; gap:8px;">
+                <button class="primary-btn full-width" id="mp-add-friend-btn">
+                    <i data-lucide="user-plus"></i> Arkadaşlık Gönder
+                </button>
+                <button class="secondary-btn full-width" id="mp-mutual-friends-btn">
+                    <span><i data-lucide="users"></i> Ortak Arkadaşlar</span>
+                    <i data-lucide="chevron-right"></i>
+                </button>
+                <button class="secondary-btn full-width" id="mp-mutual-servers-btn">
+                    <span><i data-lucide="server"></i> Ortak Sunucular</span>
+                    <i data-lucide="chevron-right"></i>
+                </button>
             </div>
-            <div class="settings-row">
-                <label><i data-lucide="waves" style="width:13px;height:13px;"></i> Gürültü Önleme</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="as-noise-sup" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="settings-row">
-                <label><i data-lucide="ear-off" style="width:13px;height:13px;"></i> Yankı Önleme</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="as-echo-canc" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-=======
->>>>>>> parent of e729613 (v4)
-            </div>
-        </div>
-    </template>
-
-<<<<<<< HEAD
-        <!-- Ses Çıkış -->
-        <div class="settings-section">
-            <div class="settings-label">SES ÇIKIŞI (HOPARLÖR)</div>
-            <div class="settings-row">
-                <label><i data-lucide="volume-2" style="width:13px;height:13px;"></i> Cihaz</label>
-                <select id="as-spk-select" class="settings-select glass-input">
-                    <option>Varsayılan Hoparlör</option>
-                </select>
-            </div>
-            <div class="settings-row">
-                <label><i data-lucide="sliders" style="width:13px;height:13px;"></i>
-                    Ses Seviyesi <span id="as-vol-label" style="color:var(--accent-cyan);">100%</span>
-                </label>
-                <input type="range" id="as-vol" min="0" max="100" value="100" class="settings-slider">
-            </div>
-        </div>
-
-        <!-- Bağlantı Hız Testi -->
-        <div class="settings-section">
-            <div class="settings-label">BAĞLANTI</div>
-            <div class="settings-row">
-                <label><i data-lucide="activity" style="width:13px;height:13px;"></i> Hız Testi</label>
-                <button class="secondary-btn" id="as-ping-btn" style="padding:7px 14px;font-size:13px;">Testi Başlat</button>
-            </div>
-            <div id="as-ping-result" style="font-size:12px;color:var(--text-secondary);padding:6px 0 0;"></div>
-        </div>
-
         </div>
     </div>
-</div>
-
-<!-- Voice Card Template -->
-    <template id="user-card-template">
-        <div class="voice-card" data-peer-id="">
-            <div class="avatar-ring">
-                <div class="avatar-circle"></div>
-            </div>
-            <audio autoplay></audio>
-            <video class="screen-view" autoplay playsinline style="display:none;"></video>
-            <span class="user-label">Kullanıcı</span>
-        </div>
-    </template>
 
     <!-- ════ MUTUAL DETAILS MODAL ════ -->
     <div id="mutual-details-modal" class="modal-overlay" style="display:none;">
         <div class="modal-box glass-panel" style="max-width: 400px; text-align: center;">
-            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                <div class="hero-icon"><i data-lucide="users"></i></div>
-            </div>
+            <div class="hero-icon"><i data-lucide="users"></i></div>
             <h2 id="mutual-details-title">Ortak Liste</h2>
-            <div id="mutual-details-list" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; padding: 10px; max-height: 250px; overflow-y: auto; text-align: left;">
-                <!-- items go here -->
-            </div>
-            <button class="primary-btn full-width" style="margin-top: 20px;" onclick="closeMutualDetails()">Kapat</button>
+            <div id="mutual-details-list" class="mutual-list"></div>
+            <button class="primary-btn full-width" style="margin-top: 20px;" id="close-mutual-btn">Kapat</button>
         </div>
     </div>
 
     <!-- ════ GELEN ARAMA EKRANI ════ -->
     <div class="modal-overlay" id="incoming-call-modal" style="display:none; z-index: 10000;">
-        <div class="modal-box glass-panel" style="max-width: 320px; text-align: center; border: 2px solid var(--accent-purple); animation: callPulse 2s infinite;">
-            <img src="" id="inc-call-avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent-purple); margin-bottom: 15px;">
+        <div class="modal-box glass-panel call-box">
+            <img src="" id="inc-call-avatar" class="call-avatar">
             <h3 id="inc-call-name">Kullanıcı</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 25px;">Seni arıyor...</p>
-            <div style="display: flex; gap: 10px;">
-                <button class="primary-btn danger-btn" id="btn-decline-call" style="flex:1; background: #ef4444 !important;"><i data-lucide="phone-off"></i> Reddet</button>
-                <button class="primary-btn" id="btn-accept-call" style="flex:1; background: #22c55e !important;"><i data-lucide="phone"></i> Kabul Et</button>
+            <p>Seni arıyor...</p>
+            <div class="call-actions">
+                <button class="primary-btn danger-btn" id="btn-decline-call"><i data-lucide="phone-off"></i> Reddet</button>
+                <button class="primary-btn success-btn" id="btn-accept-call"><i data-lucide="phone"></i> Kabul Et</button>
             </div>
         </div>
     </div>
 
-    <!-- ════ CONTEXT MENU (SAĞ TIK) ════ -->
-    <div id="context-menu" class="glass-panel" style="display:none; position:fixed; z-index:9999; min-width:160px; padding:6px; border-radius:8px; box-shadow:0 8px 16px rgba(0,0,0,0.5);">
-        <div class="ctx-item" id="ctx-edit-ch" style="padding:10px; cursor:pointer; color:var(--text-primary); display:flex; align-items:center; gap:8px; border-radius:4px;"><i data-lucide="settings" style="width:16px;"></i> Oda Ayarları</div>
-        <div class="ctx-item danger" id="ctx-delete-ch" style="padding:10px; cursor:pointer; color:var(--text-danger); display:flex; align-items:center; gap:8px; border-radius:4px;"><i data-lucide="trash-2" style="width:16px;"></i> Odayı Sil</div>
+    <!-- ════ CONTEXT MENU ════ -->
+    <div id="context-menu" class="glass-panel context-menu" style="display:none;">
+        <div class="ctx-item" id="ctx-edit-ch"><i data-lucide="settings"></i> Oda Ayarları</div>
+        <div class="ctx-item danger" id="ctx-delete-ch"><i data-lucide="trash-2"></i> Odayı Sil</div>
     </div>
 
-    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
-=======
+    <!-- Voice Card Template -->
+    <template id="user-card-template">
+        <div class="voice-card">
+            <div class="avatar-ring">
+                <div class="avatar-circle"></div>
+                <div class="sound-wave"></div>
+                <div class="sound-wave"></div>
+            </div>
+            <audio autoplay></audio>
+            <video class="screen-view" autoplay playsinline style="display:none;"></video>
+            <span class="user-label">Kullanıcı</span>
+            <div class="card-indicators">
+                <i class="fa-solid fa-microphone-slash mic-muted-icon" style="display:none;"></i>
+            </div>
+        </div>
+    </template>
+
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
-<<<<<<< HEAD
     <script>lucide.createIcons();</script>
->>>>>>> parent of b21c083 (V7)
-=======
-    <script>
-        // Init Lucide
-        lucide.createIcons();
-    </script>
->>>>>>> parent of e729613 (v4)
 </body>
 </html>
-
-
