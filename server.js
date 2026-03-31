@@ -63,12 +63,10 @@ io.on('connection', (socket) => {
 const generateId = () => Math.random().toString(36).substring(2, 10);
 
 const db = {
-    users: {},     // userId -> { id, username, password, profilePic, friends: [], servers: [] }
+    users: {},     // userId -> { id, username, password, friends: [], servers: [] }
     servers: {},   // serverId -> { id, name, ownerId, members: [], channels: [] }
     sessions: {},  // socket.id -> userId
-    dms: {},       // dmRoomId -> [{senderId, sender, text, timestamp}]
-    channelMessages: {}, // channelId -> [{senderId, sender, text, timestamp}]
-    friendRequests: {}, // userId -> [{fromId, fromUsername, timestamp}]
+    dms: {},       // dmRoomId -> [{senderId, text, timestamp, inviteData}]
 };
 
 const getDmRoomId = (id1, id2) => [id1, id2].sort().join('_');
@@ -78,7 +76,7 @@ io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
     // --- Authentication ---
-    socket.on('register', ({ username, password, profilePic }, callback) => {
+    socket.on('register', ({ username, password }, callback) => {
         const exists = Object.values(db.users).find(u => u.username === username);
         if (exists) return callback({ success: false, message: 'Username exists' });
         
@@ -87,11 +85,11 @@ io.on('connection', (socket) => {
             id: generateId(),
             username,
             password,
-            profilePic: profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
             friends: [],
             servers: []
         };
         db.users[newUser.id] = newUser;
+<<<<<<< HEAD
         db.friendRequests[newUser.id] = [];
 <<<<<<< HEAD
         callback({ success: true, message: 'Hesap oluşturuldu! Giriş yapabilirsiniz.' });
@@ -123,6 +121,8 @@ io.on('connection', (socket) => {
         }
 =======
 =======
+=======
+>>>>>>> parent of 79b2a38 (V4)
         callback({ success: true, message: 'Registered successfully. Please login.' });
     });
 
@@ -135,26 +135,34 @@ io.on('connection', (socket) => {
         const userServers = user.servers.map(sId => db.servers[sId]).filter(Boolean);
         const userFriends = user.friends.map(fId => {
             const f = db.users[fId];
-            return f ? { id: f.id, username: f.username, profilePic: f.profilePic } : null;
+            return f ? { id: f.id, username: f.username } : null;
         }).filter(Boolean);
 <<<<<<< HEAD
 >>>>>>> parent of b21c083 (V7)
 =======
 
+<<<<<<< HEAD
         const requests = db.friendRequests[user.id] || [];
 >>>>>>> parent of d55b9a7 (V5)
 
+=======
+>>>>>>> parent of 79b2a38 (V4)
         callback({
             success: true, 
-            user: { id: user.id, username: user.username, profilePic: user.profilePic },
+            user: { id: user.id, username: user.username },
             servers: userServers,
+<<<<<<< HEAD
             friends: userFriends,
             friendRequests: db.friendRequests[user.id] || []
+=======
+            friends: userFriends
+>>>>>>> parent of 79b2a38 (V4)
         });
 
         user.servers.forEach(sId => socket.join(sId));
     });
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     // PROFİL GÜNCELLE
@@ -264,15 +272,19 @@ io.on('connection', (socket) => {
 =======
     // --- Friends & Requests ---
     socket.on('send-friend-request', (targetUsername, callback) => {
+=======
+    // --- Friends ---
+    socket.on('add-friend', (friendUsername, callback) => {
+>>>>>>> parent of 79b2a38 (V4)
         const userId = db.sessions[socket.id];
         if (!userId) return;
         const user = db.users[userId];
-        const target = Object.values(db.users).find(u => u.username === targetUsername);
+        const friend = Object.values(db.users).find(u => u.username === friendUsername);
         
-        if (!target) return callback({ success: false, message: 'User not found' });
-        if (target.id === userId) return callback({ success: false, message: 'Cannot add yourself' });
-        if (user.friends.includes(target.id)) return callback({ success: false, message: 'Already friends' });
+        if (!friend) return callback({ success: false, message: 'User not found' });
+        if (user.friends.includes(friend.id)) return callback({ success: false, message: 'Already friends' });
         
+<<<<<<< HEAD
         if (!db.friendRequests[target.id]) db.friendRequests[target.id] = [];
         const alreadyPending = db.friendRequests[target.id].find(r => r.fromId === userId);
         if (alreadyPending) return callback({ success: false, message: 'Request already sent' });
@@ -297,11 +309,16 @@ io.on('connection', (socket) => {
         const fromUser = db.users[fromId];
         if (!fromUser) return callback({ success: false, message: 'Kullanıcı artık mevcut değil.' });
 =======
+=======
+        user.friends.push(friend.id);
+        friend.friends.push(user.id);
+>>>>>>> parent of 79b2a38 (V4)
         
-        const targetSocketId = Object.keys(db.sessions).find(sId => db.sessions[sId] === target.id);
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('receive-friend-request', request);
+        const friendSocketId = Object.keys(db.sessions).find(sId => db.sessions[sId] === friend.id);
+        if (friendSocketId) {
+            io.to(friendSocketId).emit('friend-added', { id: user.id, username: user.username });
         }
+<<<<<<< HEAD
         callback({ success: true, message: 'Friend request sent!' });
     });
 
@@ -367,6 +384,9 @@ io.on('connection', (socket) => {
             io.to(fromSocketId).emit('friend-added', { id: user.id, username: user.username, profilePic: user.profilePic });
         }
         callback({ success: true, friend: { id: fromUser.id, username: fromUser.username, profilePic: fromUser.profilePic } });
+=======
+        callback({ success: true, friend: { id: friend.id, username: friend.username } });
+>>>>>>> parent of 79b2a38 (V4)
     });
 
     // --- Servers ---
@@ -633,6 +653,17 @@ io.on('connection', (socket) => {
 =======
         socket.to(channelId).emit('user-connected', peerId, user.username);
         
+        // Members list update
+        const server = db.servers[serverId];
+        if (server) {
+            const members = server.members.map(mId => {
+                const u = db.users[mId];
+                const isOnline = Object.values(db.sessions).includes(mId);
+                const inChannel = Object.values(voiceRooms).some(room => room.some(rm => rm.userId === mId));
+                return { id: u.id, username: u.username, online: isOnline, inChannel };
+            });
+            io.to(serverId).emit('member-list-update', { serverId, members });
+        }
         callback({ success: true });
     });
     
@@ -661,6 +692,7 @@ io.on('connection', (socket) => {
     // ---- KANAL MESAJLARINI GETİR ----
 =======
     // --- Text Chat ---
+<<<<<<< HEAD
 >>>>>>> parent of d55b9a7 (V5)
     socket.on('get-channel-messages', (channelId, callback) => {
         callback({ success: true, messages: db.channelMessages[channelId] || [] });
@@ -707,9 +739,17 @@ io.on('connection', (socket) => {
 
     // ---- DM GÖNDER ----
 =======
+=======
+    socket.on('send-chat-message', (channelId, message) => {
+        const userId = db.sessions[socket.id];
+        if (!userId) return;
+        const user = db.users[userId];
+>>>>>>> parent of 79b2a38 (V4)
         socket.to(channelId).emit('chat-message', {
             channelId,
-            ...msg
+            sender: user.username,
+            text: message,
+            timestamp: new Date().toISOString()
         });
     });
 
@@ -721,8 +761,12 @@ io.on('connection', (socket) => {
         callback({ success: true, messages: db.dms[room] || [] });
     });
 
+<<<<<<< HEAD
 >>>>>>> parent of d55b9a7 (V5)
     socket.on('send-dm', ({ friendId, text }) => {
+=======
+    socket.on('send-dm', ({ friendId, text, inviteData }) => {
+>>>>>>> parent of 79b2a38 (V4)
         const userId = db.sessions[socket.id];
         if (!userId) return;
         const user = db.users[userId];
@@ -731,9 +775,9 @@ io.on('connection', (socket) => {
         const msg = {
             senderId: userId,
             sender: user.username,
-            profilePic: user.profilePic,
             text,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            inviteData
         };
         db.dms[room].push(msg);
 <<<<<<< HEAD
@@ -834,7 +878,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 10000; // Render preferred port
 server.listen(PORT, '0.0.0.0', () => {
 <<<<<<< HEAD
     console.log(`🚀 Nexus çalışıyor: http://localhost:${PORT}`);

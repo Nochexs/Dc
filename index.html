@@ -109,6 +109,7 @@
 =======
             <h2>Welcome to Nexus</h2>
             <p class="auth-sub">Enter the next dimension of communication.</p>
+<<<<<<< HEAD
             
             <div class="auth-avatar-selection">
                 <div class="avatar-preview shadow-glow" id="auth-avatar-preview">
@@ -123,6 +124,8 @@
                 </button>
             </div>
 
+=======
+>>>>>>> parent of 79b2a38 (V4)
             <div class="form-group">
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -168,12 +171,13 @@
     <div class="app-container" id="app-container" style="display:none;">
         <main class="glass-frame">
             
-            <!-- 1. Server Rail -->
+            <!-- 1. Server Rail (Nexus Style) -->
             <nav class="server-rail">
-                <div class="logo-area" id="nav-logo">
+                <div class="logo-area" id="nav-home">
                     <i data-lucide="zap" class="logo-icon"></i>
                 </div>
                 <div class="rail-divider"></div>
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 
@@ -547,6 +551,8 @@
                 <button class="rail-action-btn tooltip" id="nav-join-server" data-tooltip="Davet ile Katıl">
                     <i data-lucide="link-2"></i>
 =======
+=======
+>>>>>>> parent of 79b2a38 (V4)
                 <div class="server-list" id="dynamic-server-list">
                     <!-- Dynamic Servers -->
                 </div>
@@ -576,6 +582,7 @@
 =======
                 </button>
                 <div class="rail-spacer"></div>
+<<<<<<< HEAD
 
                 <!-- Notifications Button -->
                 <button class="rail-action-btn tooltip" id="nav-notifications" data-tooltip="Notifications">
@@ -599,8 +606,14 @@
                     <div class="avatar-small shadow-glow" id="my-avatar">
                         <img src="" alt="User">
 >>>>>>> parent of e729613 (v4)
+=======
+                <div class="user-profile-trigger">
+                    <div class="avatar-small shadow-glow" id="my-avatar">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+>>>>>>> parent of 79b2a38 (V4)
                         <div class="status-dot"></div>
                     </div>
+                    <span id="my-username-display" style="display:none;">User</span>
                 </div>
             </nav>
 
@@ -608,6 +621,7 @@
             <aside class="channel-sidebar">
                 <header class="sidebar-header">
                     <h2 id="sidebar-context-title">FRIENDS</h2>
+<<<<<<< HEAD
                     <div class="header-actions">
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -629,6 +643,9 @@
                             <i data-lucide="user-plus"></i>
                         </button>
                     </div>
+=======
+                    <button id="btn-add-friend" class="icon-btn-lite"><i data-lucide="user-plus"></i></button>
+>>>>>>> parent of 79b2a38 (V4)
                 </header>
                 <ul class="channel-list" id="dynamic-channel-list">
                     <!-- Dynamic Channels -->
@@ -642,6 +659,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             <!-- 3. Main Content -->
 =======
             <!-- 3. Main Center Area -->
@@ -649,6 +667,9 @@
 =======
             <!-- 3. Main Center Area -->
 >>>>>>> parent of e729613 (v4)
+=======
+            <!-- 3. Main Center Area (Voice Room / Welcome) -->
+>>>>>>> parent of 79b2a38 (V4)
             <section class="main-content">
                 <header class="content-header">
                     <div class="header-info">
@@ -685,8 +706,13 @@
                     </div>
                 </div>
 
+<<<<<<< HEAD
                 <!-- Voice Controls Bar -->
                 <div class="voice-controls-panel" id="voice-controls" style="display:none;">
+=======
+                <!-- Floating Voice Controls (Always present if in voice) -->
+                <div class="voice-controls-panel shadow-glow" id="voice-controls" style="display:none;">
+>>>>>>> parent of 79b2a38 (V4)
                     <div class="voice-meta">
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -724,9 +750,10 @@
                 </div>
             </section>
 
-            <!-- 4. Persistent Chat Panel -->
+            <!-- 4. Persistent Chat Panel (Right) -->
             <aside id="chat-panel" class="chat-panel">
                 <header class="chat-header">
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                     <h3 id="chat-panel-title">Sohbet</h3>
@@ -736,6 +763,9 @@
 =======
                     <h3 id="chat-panel-title">Channel Chat</h3>
 >>>>>>> parent of e729613 (v4)
+=======
+                    <h3>Channel Chat</h3>
+>>>>>>> parent of 79b2a38 (V4)
                 </header>
                 <div class="chat-messages" id="chat-messages">
                     <!-- Messages -->
@@ -787,8 +817,13 @@
 =======
 >>>>>>> parent of e729613 (v4)
             <div class="modal-actions">
+<<<<<<< HEAD
                 <button class="close-modal secondary-btn">İptal</button>
                 <button class="primary-btn" id="confirm-create-server">Oluştur</button>
+=======
+                <button class="close-modal">Cancel</button>
+                <button class="primary-btn" id="confirm-create-server">Create</button>
+>>>>>>> parent of 79b2a38 (V4)
             </div>
         </div>
     </div>
@@ -809,6 +844,7 @@
 >>>>>>> parent of e729613 (v4)
     <div class="modal-overlay" id="add-friend-modal" style="display:none;">
         <div class="modal-box glass-panel shadow-glow">
+<<<<<<< HEAD
             <h2>Find Friends</h2>
             <p class="modal-sub">Enter the username of the person you want to connect with.</p>
             <div class="friend-input-container">
@@ -822,6 +858,14 @@
             <p id="add-friend-message" class="status-msg"></p>
             <div class="modal-actions">
                 <button class="close-modal secondary-btn full-width">Kapat</button>
+=======
+            <h2>Add Friend</h2>
+            <input type="text" id="new-friend-username" placeholder="Username" class="glass-input">
+            <p id="add-friend-message" class="error-msg"></p>
+            <div class="modal-actions">
+                <button class="close-modal">Cancel</button>
+                <button class="primary-btn" id="confirm-add-friend">Send Request</button>
+>>>>>>> parent of 79b2a38 (V4)
             </div>
         </div>
     </div>
@@ -841,6 +885,7 @@
     <div class="modal-overlay" id="join-server-modal" style="display:none;">
         <div class="modal-box glass-panel shadow-glow">
             <h2>Join Server</h2>
+<<<<<<< HEAD
             <input type="text" id="join-server-link" placeholder="Enter Invite ID" class="glass-input">
 <<<<<<< HEAD
 >>>>>>> parent of e729613 (v4)
@@ -849,10 +894,17 @@
             <div class="modal-actions">
                 <button class="close-modal secondary-btn">İptal</button>
                 <button class="primary-btn" id="confirm-join-server">Katıl</button>
+=======
+            <input type="text" id="join-server-link" placeholder="Invite Link" class="glass-input">
+            <div class="modal-actions">
+                <button class="close-modal">Cancel</button>
+                <button class="primary-btn" id="confirm-join-server">Join</button>
+>>>>>>> parent of 79b2a38 (V4)
             </div>
         </div>
     </div>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     <!-- ===== PANEL: Bildirimler ===== -->
@@ -945,6 +997,8 @@
 
     <!-- Voice Card Template -->
 =======
+=======
+>>>>>>> parent of 79b2a38 (V4)
     <!-- Voice card template -->
 >>>>>>> parent of e729613 (v4)
 =======
